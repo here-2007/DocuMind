@@ -29,7 +29,7 @@ Durable facts and lessons for future Codex sessions. [AGENTS.md](AGENTS.md) owns
 - The MinIO image pull failed during the initial build; ADR-022 chose the permitted private filesystem equivalent. There is no tested S3 adapter.
 - Tests create a unique PostgreSQL database, object root and queue namespace. They require real local PostgreSQL/Redis; they do not substitute SQLite for PostgreSQL constraints. Avoid using the demo queue for tests.
 - Kaggle authentication was reported configured by the user. Use existing configured credentials only for authorized Kaggle work; availability does not prove GPU quota, model rights or platform permission. No Kaggle secret belongs in this file.
-- Git was initialized on `main` on 2026-11-08 for the user-requested publication through Phase 1B. `origin` is https://github.com/here-2007/DocuMind.git (public; empty when first checked). Check current Git/runtime state before assuming a commit, clean checkout or running service. Private `.env`, `.data` (including model weights), `.venv` and caches are ignored.
+- Git was initialized on `main` on 2026-11-08 for the user-requested publication through Phase 1B. `origin` is https://github.com/here-2007/DocuMind.git (public; empty when first checked); local `main` tracks `origin/main`. The initial Phase 1B snapshot was pushed and its remote commit verified; see PROGRESS.md for publication evidence. Check current Git/runtime state before assuming a commit, clean checkout or running service. Private `.env`, `.data` (including model weights), `.venv` and caches are ignored.
 
 ## Model and inference commitments (planned)
 
