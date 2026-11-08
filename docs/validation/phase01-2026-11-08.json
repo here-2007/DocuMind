@@ -1,0 +1,54 @@
+{
+  "recorded_at": "2026-11-08T11:14:19.435967+00:00",
+  "scope": "Phase 0 + Phase 1A local native PDF slice",
+  "environment": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python": "3.12.13",
+    "packages": {
+      "fastapi": "0.162.2",
+      "sqlalchemy": "2.0.57",
+      "psycopg": "3.3.8",
+      "alembic": "1.20.1",
+      "celery": "5.7.0",
+      "pymupdf": "1.28.2",
+      "pytest": "8.4.2"
+    }
+  },
+  "observed_checks": {
+    "pytest": {
+      "passed": 28,
+      "failed": 0,
+      "warnings": 6
+    },
+    "ruff": "passed",
+    "alembic_check": "no new upgrade operations detected",
+    "migration_roundtrip": "passed in disposable test database",
+    "docker_http_smoke": "passed, synthetic fixture removed",
+    "clean_source_startup": "passed with new config, empty volumes and ephemeral ports"
+  },
+  "artifact_sha256": {
+    "pyproject.toml": "eb7e39500e87456cd475994a1fe1514e1f6137d5eacd85cc99ad502bc1c5e272",
+    "uv.lock": "5bc5c62a1a3aa4cadecc031d266b8b6e248a2e0e515896e5a08f6fdd97f032e3",
+    "compose.yaml": "16cdcc9a6fd4b4e36b34b8e3801e148f6ec58630e50d166980d02e3b545a3dee",
+    "Dockerfile": "913428abe6f3bf4722e0d19969987c7a099be7655d677926716bd65f6a794777",
+    "backend/documind/__init__.py": "966c76dfc4b62a4899a99f9f13e233cc48ff2cfe5368b1545d5845c7489038c4",
+    "backend/documind/api.py": "34bbf84acb233f77ea9627d2ecc7ca623740ca3fe238262ca377ee838527474b",
+    "backend/documind/cli.py": "53a599fb1b9d0864ad9f1cfa75b4e1b107c7366aa14f11bc938e2fa2d8cba76b",
+    "backend/documind/config.py": "54980cd492bfc48397392b5887f084fee966cc7eb18b02355b8155c70f0ef74f",
+    "backend/documind/db.py": "b522ef11600e954bdf60edee020379d38136a1ca57c9c2d82996925eaa2637ee",
+    "backend/documind/errors.py": "524cf0dc71d87592d4de42731748f5d431de3e513bf957a5448fe21390af862b",
+    "backend/documind/parser.py": "69aa5812dfa0cf6f481a902629743834672cb5454902247dbce76a1e8de403cc",
+    "backend/documind/repository.py": "65c90e83f005371c369c431d153afed1887064a601433b24317b02ee790be5dd",
+    "backend/documind/schema.py": "f62ce18b98efe144e39b6afceda35bce2c53d7b920065e02b97c0af60ba0b379",
+    "backend/documind/storage.py": "173f1f5024ffee681247ea55f5f449af0dc92861504cf4f6cdc95e50b3749a17",
+    "backend/documind/worker.py": "7979dfbac9c39470f8740e0c1ff989dd4e3281a8b361c5ddeebcffff25517d27",
+    "migrations/versions/0001_native.py": "55b6ea58e41fc40721c8f6c437ba1f92c4466f15eb690b80f81ddc6bc310f674"
+  },
+  "not_run": [
+    "remote CI",
+    "model inference/training",
+    "Kaggle integration",
+    "public auth/load/security release evaluation"
+  ],
+  "source_control": "No Git repository; no commit identifier claimed"
+}

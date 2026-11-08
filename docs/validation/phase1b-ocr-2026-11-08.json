@@ -1,0 +1,48 @@
+{
+  "recorded_at": "2026-11-08T12:07:15.597612+00:00",
+  "scope": "Two clean synthetic English scans; not confidence calibration or production accuracy",
+  "normalization": "Whitespace collapsed for CER/WER; case, punctuation and amounts retained",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.13",
+  "parser_version": "pymupdf-1.28.2-pdf-v2",
+  "ocr_identity": {
+    "models": {
+      "det": "PP-OCRv5_mobile_det",
+      "rec": "en_PP-OCRv5_mobile_rec"
+    },
+    "packages": {
+      "paddleocr": "3.7.0",
+      "paddlepaddle": "3.3.1"
+    },
+    "revisions": {
+      "PaddlePaddle/PP-OCRv5_mobile_det": "0d63e78e2b680928f6b1747d76a08db6e645efb7",
+      "PaddlePaddle/en_PP-OCRv5_mobile_rec": "267c36e24c331595590fe7bd72bde2436fd286f2"
+    },
+    "files": {
+      "det/inference.json": "05feef1acb00aa4cd7362b15f7f501fc4f99d7b1fa73c1c871e0c7b1504b0f5c",
+      "det/inference.pdiparams": "afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b",
+      "det/inference.yml": "98069072e1b6b37d727fd9d9f11725faa46d6ea0de012f2ed26caea011c37699",
+      "rec/inference.json": "fd1b6ec722ea841a72d3ba43e527df1d1066d5d7808e0503ee3eec7265188753",
+      "rec/inference.pdiparams": "3ec8a97ed6cefe8568d3e2ee90bb193299b566a7661aa4fd52d224b96b59f66b",
+      "rec/inference.yml": "27e91d0582f40168aa218303c76e184bc78fa7a5d105aad0cfbad8458b441067"
+    }
+  },
+  "results": [
+    {
+      "expected": "INVOICE 12345",
+      "recognized": "INVOICE 12345",
+      "character_error_rate": 0.0,
+      "word_error_rate": 0.0,
+      "seconds": 2.612,
+      "status": "needs_review"
+    },
+    {
+      "expected": "Total INR 1100.00",
+      "recognized": "Total INR 1100.00",
+      "character_error_rate": 0.0,
+      "word_error_rate": 0.0,
+      "seconds": 1.568,
+      "status": "needs_review"
+    }
+  ]
+}

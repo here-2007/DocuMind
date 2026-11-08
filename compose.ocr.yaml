@@ -1,0 +1,19 @@
+# Opt-in CPU OCR runtime. PaddlePaddle's Linux wheels require x86_64.
+# Download verified models first; never switch object roots against a populated DB.
+x-ocr: &ocr
+  platform: linux/amd64
+  build:
+    context: .
+    args: {INSTALL_OCR: "1"}
+  environment:
+    OCR_ENABLED: "true"
+    OCR_MODEL_ROOT: /models/ocr
+    PARSER_TIMEOUT_SECONDS: "180"
+  volumes: ["./.data/models/ocr:/models/ocr:ro"]
+services:
+  migrate: *ocr
+  api: *ocr
+  dispatcher: *ocr
+  worker:
+    <<: *ocr
+    mem_limit: 2g

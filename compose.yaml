@@ -1,0 +1,77 @@
+name: documind
+services:
+  postgres:
+    image: postgres:16.8-alpine
+    environment:
+      POSTGRES_USER: documind
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/init_local.py}
+      POSTGRES_DB: documind
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documind -d documind"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7.4.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:56379:6379"]
+    volumes: ["redis:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    ports: ["127.0.0.1:56333:6333"]
+    volumes: ["qdrant:/qdrant/storage"]
+  migrate:
+    build: .
+    volumes: ["objects:/objects"]
+    env_file: .env
+    environment: &internal
+      DATABASE_URL: postgresql+psycopg://documind:${POSTGRES_PASSWORD}@postgres:5432/documind
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORE_ROOT: /objects
+      QDRANT_URL: http://qdrant:6333
+    command: ["sh", "-c", "alembic upgrade head && python -m documind.cli init"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    build: .
+    volumes: ["objects:/objects"]
+    env_file: .env
+    environment: *internal
+    command: ["uvicorn", "documind.api:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--limit-concurrency", "4"]
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    mem_limit: 512m
+  worker:
+    build: .
+    volumes: ["objects:/objects"]
+    env_file: .env
+    environment: *internal
+    command: ["celery", "-A", "documind.worker:celery", "worker", "--concurrency=1", "--loglevel=WARNING"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    mem_limit: 1g
+    pids_limit: 128
+  dispatcher:
+    build: .
+    volumes: ["objects:/objects"]
+    env_file: .env
+    environment: *internal
+    command: ["python", "-m", "documind.cli", "dispatch"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    mem_limit: 256m
+volumes:
+  postgres:
+  redis:
+  objects:
+  qdrant:

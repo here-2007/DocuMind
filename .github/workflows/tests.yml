@@ -1,0 +1,21 @@
+name: PDF extraction
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.6.17"
+          enable-cache: true
+      - run: uv sync --frozen --python 3.12 --extra ocr
+      - run: uv run --extra ocr python scripts/setup_ocr.py
+      - run: uv run python scripts/init_local.py
+      - run: docker compose up -d --wait postgres redis qdrant
+      - run: uv run ruff check backend scripts migrations
+      - run: uv run --extra ocr pytest -q
+        env:
+          DOCUMIND_TEST_OCR_ROOT: ${{ github.workspace }}/.data/models/ocr
+      - if: always()
+        run: docker compose down
