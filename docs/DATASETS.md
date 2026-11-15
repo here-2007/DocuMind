@@ -56,4 +56,8 @@ Version the fixture generation code, seed, files, gold JSON, validation checks a
 }
 ```
 
-This JSON is only an example contract. No dataset is included in the documentation pack.
+This JSON is an example contract. Phase 5 also includes a deterministic generator for a frozen pilot with 12 training, 6 validation and 24 test samples. The 24 test samples comprise 12 retrieval-needed and 12 safe-to-skip cases. Each document case supplies an exact passage, a near-ID negative, partial support, conflicting evidence and an absent-record passage. The manifest checks exact source spans, split assignments and file hashes. The pilot carries synthetic gold labels and no human-adjudication flag. [Runbook](LOCAL_DEVELOPMENT.md#phase-5-offline-reflection-training).
+
+The independent synthetic-v3 diagnostic contains 96 training, 24 validation and 36 held-out samples. Paired records change the visible amount, currency and date. UUID anchors conceal fixture variants. Correct and corrupted candidates share visible source text, requiring support labels to depend on the emitted answer. Three training layouts differ from the validation and test layouts. Freeze [its manifest](../backend/tests/fixtures/phase6_reflection_corpus_v3_manifest.json) before training. These controlled fixtures cover three field families and supplied-reference repetition; they are a limited diagnostic with no human-adjudication flag.
+
+[Phase 8 v1](../evaluation/datasets/phase8-v1.jsonl) materializes 200 new synthetic questions, 40 grouped invoice bundles and exact labeled values and source spans. Seed `868267` determines the content. The manifest freezes the post-training benchmark before model evaluation. It has no human adjudication and cannot serve as retroactive pre-training holdout evidence. The separate v4 cohort preserves the original split and corpus SHA-256. Neither dataset samples naturally occurring documents.

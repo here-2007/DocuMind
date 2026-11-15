@@ -1,0 +1,159 @@
+{
+  "checked_at": "2026-11-11T09:26:38.959908+00:00",
+  "architecture": "ADR-042",
+  "app_execution": "local_only",
+  "full_suite": {
+    "passed": 250,
+    "skipped": 0,
+    "warnings": 5,
+    "seconds": 138.844
+  },
+  "final_affected_boundaries": {
+    "passed": 66,
+    "skipped": 0,
+    "includes_supplied_candidate_accounting": true
+  },
+  "static_checks": [
+    "ruff",
+    "lockfile",
+    "whitespace",
+    "markdown_file_links",
+    "compose_config"
+  ],
+  "frontend_checks": [
+    "typecheck",
+    "production_build",
+    "Chromium_integration_in_full_suite"
+  ],
+  "database": {
+    "migration": "0009_split_reflection",
+    "empty_disposable_roundtrip": true,
+    "alembic_metadata_check": true,
+    "existing_application_database_migrated": false
+  },
+  "local_model_checks": {
+    "trained_pilot_cpu": true,
+    "trained_pilot_mps": {
+      "inference_profile": "fp16-mps",
+      "finish_reason": "complete",
+      "candidate_preserved": true,
+      "labels": {
+        "utility": "[IsUSE:5]"
+      },
+      "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "pilot": true
+    },
+    "real_cpu_generator": true
+  },
+  "kaggle_generation": {
+    "live": true,
+    "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "authenticated_loopback_completion": true,
+    "notebook_administration_rejected": true,
+    "cleanup": {
+      "phase": "stop_requested",
+      "physical_gpu_release_confirmed": false
+    }
+  },
+  "kaggle_reflection": {
+    "live": true,
+    "model": "Qwen/Qwen3-4B-Instruct-2507",
+    "bundle_sha256": "0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543",
+    "inference_profile": "nf4-cuda",
+    "mode": "reflection_pilot",
+    "steps": [
+      {
+        "state": "DECIDE",
+        "candidate": null,
+        "labels": {
+          "decision": "[Retrieve]"
+        },
+        "finish_reason": "complete",
+        "candidate_preserved": null
+      },
+      {
+        "state": "CANDIDATE",
+        "candidate": "INR 1100.00",
+        "labels": {
+          "relevance": "[IsREL:Yes]",
+          "support": "[IsSUP:Fully]",
+          "utility": "[IsUSE:5]"
+        },
+        "finish_reason": "complete",
+        "candidate_preserved": true
+      },
+      {
+        "state": "CANDIDATE",
+        "candidate": "INR 9999.00",
+        "labels": {
+          "relevance": "[IsREL:Yes]",
+          "support": "[IsSUP:No]",
+          "utility": "[IsUSE:1]"
+        },
+        "finish_reason": "complete",
+        "candidate_preserved": true
+      }
+    ],
+    "cleanup": {
+      "phase": "stop_requested",
+      "physical_gpu_release_confirmed": false
+    }
+  },
+  "limitations": [
+    "Live model probes are compatibility checks with synthetic inputs",
+    "Full 73-case selected-model application quality evaluation remains pending",
+    "Generator and trained-critic pairings require separate quality evaluation",
+    "Target Qwen capacity on this device has not been measured",
+    "Cancellation acceptance does not establish physical Kaggle GPU deallocation"
+  ],
+  "local_packages": {
+    "torch": "2.15.0",
+    "transformers": "5.22.2",
+    "peft": "0.19.1",
+    "kaggle": "2.2.5"
+  },
+  "source_sha256": {
+    "backend/documind/runtime_protocol.py": "b6c5aa3e604d8d70bb5fa0b7e18f20e75aaf41e9bdcbaed4a54dc7c3910dee20",
+    "backend/documind/reflection_model.py": "c02afcfcd0340bcc1c99a988bee091b64e5ab99718a059db063a308596c228e4",
+    "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+    "backend/documind/reflection_queries.py": "fc10654c4c151e0b9a8db8de20e67175d1014cb4ecf98add568bf33aa5f09fbf",
+    "backend/documind/runtime_client.py": "1249b84578c83983b2f0acdd4fdb1e07364ff96ea666f1e9679efe2d67d32a83",
+    "backend/documind/queries.py": "ffc1221705b8c54c916b47482c33d177b9b8a2b6a5a547cbbd6c99e0cf81b194",
+    "backend/documind/generator_runtime.py": "3f840b2c363c8a8e10339de3bddd7ba7c03a8ff666c4a1dcdb59908d946eaa0c",
+    "backend/documind/config.py": "c58332fa9d05bafa14bbd76232963f66c7336f41927bba2820da235aa79ca732",
+    "backend/documind/api.py": "0c55468840a91a969d30f74f29205fee2a4cbbe70aec4d8c8987eb1529e09381",
+    "backend/documind/schema.py": "8119f96e9dbdc2cb6043d924602599daf79b4924a57d0b827135ed827d389068",
+    "scripts/run_kaggle_model.py": "43410f7462490470fc25ca47f4a4cd44435fa2d80d421214a02daeefa4ca6696",
+    "scripts/kaggle_serving_probe.py": "b54f1fb4a25a2bf037605e47107bcc2ecd75ada385cfd48aa8cf011d4c477340",
+    "migrations/versions/0009_split_reflection.py": "3e079fc0bfffed11c06b053f8931147c0084599bdb4b6b8d069bb1de46507e8d",
+    "frontend/components/query-chat.tsx": "5a40582c40d9e61608703582d2d779b6987020ad97871b66015cef7ef042be30",
+    "frontend/components/connections.tsx": "fc80360735e34711c52858534be0c64cfbf2dd7308dbdb26e9ea95e459791cd9",
+    "frontend/lib/api.ts": "bc58c60cfaf69d4f2dca1ec114b4de7c399d5aff0b7a975dd1499d5ae50ab231",
+    "backend/tests/test_local_models.py": "f1768f84982496ba890d5d424f22602f5b6929e9d58c2249a1d04f841161c649",
+    "backend/tests/test_reflection_runtime.py": "9ae4ee635dcabde238eac823ba44261ebaa923823c5ef4b6757fff194d0c47db",
+    "backend/tests/test_ingestion.py": "245f6b7e95f467efa95a26f13152b3ad6a49dbf6b00f8c9100516071c2438135"
+  },
+  "earlier_source_snapshot_sha256": {
+    "backend/documind/runtime_protocol.py": "2a67d2052fe3a22312f83f7605a149f1a51d363d2856b47d398b84cec4cdc70a",
+    "backend/documind/reflection_model.py": "c02afcfcd0340bcc1c99a988bee091b64e5ab99718a059db063a308596c228e4",
+    "backend/documind/reflection_runtime.py": "9724da3fbe95901a93436f452335068ace55f04b87a9b202b05f90c0f097cbe5",
+    "backend/documind/reflection_queries.py": "9b9bf1dd6882720d92f4149a82fe11a5213b1886ed812627b2ccb5d12a3fac4f",
+    "backend/documind/runtime_client.py": "1249b84578c83983b2f0acdd4fdb1e07364ff96ea666f1e9679efe2d67d32a83",
+    "backend/documind/queries.py": "ffc1221705b8c54c916b47482c33d177b9b8a2b6a5a547cbbd6c99e0cf81b194",
+    "backend/documind/generator_runtime.py": "3f840b2c363c8a8e10339de3bddd7ba7c03a8ff666c4a1dcdb59908d946eaa0c",
+    "backend/documind/config.py": "c58332fa9d05bafa14bbd76232963f66c7336f41927bba2820da235aa79ca732",
+    "backend/documind/api.py": "0c55468840a91a969d30f74f29205fee2a4cbbe70aec4d8c8987eb1529e09381",
+    "backend/documind/schema.py": "8119f96e9dbdc2cb6043d924602599daf79b4924a57d0b827135ed827d389068",
+    "scripts/run_kaggle_model.py": "43410f7462490470fc25ca47f4a4cd44435fa2d80d421214a02daeefa4ca6696",
+    "scripts/kaggle_serving_probe.py": "b54f1fb4a25a2bf037605e47107bcc2ecd75ada385cfd48aa8cf011d4c477340",
+    "migrations/versions/0009_split_reflection.py": "3e079fc0bfffed11c06b053f8931147c0084599bdb4b6b8d069bb1de46507e8d",
+    "frontend/components/query-chat.tsx": "5a40582c40d9e61608703582d2d779b6987020ad97871b66015cef7ef042be30",
+    "frontend/components/connections.tsx": "fc80360735e34711c52858534be0c64cfbf2dd7308dbdb26e9ea95e459791cd9",
+    "frontend/lib/api.ts": "bc58c60cfaf69d4f2dca1ec114b4de7c399d5aff0b7a975dd1499d5ae50ab231",
+    "backend/tests/test_local_models.py": "96ce7b5dd1b16b52c5f847a86caaec03b5d833afd7a369d4ba28df86c64f81d5",
+    "backend/tests/test_reflection_runtime.py": "0f23d291c779045f983f67229d48b82c3ec5c2cfd0f19784f39d54d5dbf1567e",
+    "backend/tests/test_ingestion.py": "245f6b7e95f467efa95a26f13152b3ad6a49dbf6b00f8c9100516071c2438135"
+  },
+  "source_hash_note": "Repository snapshots at evidence collection. Live probes preceded the final forced-token accounting metadata extension. The final affected tests cover the accounting extension with an actual CPU adapter.",
+  "final_checked_at": "2026-11-11T09:31:39.150411+00:00"
+}

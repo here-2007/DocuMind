@@ -1,6 +1,6 @@
 # Testing and acceptance plan
 
-The assertions below define full-product acceptance. The native parser/storage/ingestion subset is executable in backend/tests; later retrieval/model scenarios remain tests to implement. Actual results are recorded in [PROGRESS.md](../PROGRESS.md). Use pytest for Python; frontend unit/component tests and an end-to-end browser test runner where appropriate. Keep tiny synthetic fixture documents under a legally distributable test fixtures directory only after they are created.
+The assertions below define full-product acceptance. Native and OCR ingestion, hybrid retrieval, baseline queries, custom endpoints, SSE and the local browser workspace have executable tests. The suite uses Qdrant, Redis/Celery and PostgreSQL with disposable data. Backend model checks load actual pinned weights. The browser fixture uses real retrieval and a synthetic completion endpoint to check transport and UI behavior. Deployment, comparison and research scenarios retain pending cases. Use the [local runbook](LOCAL_DEVELOPMENT.md#phase-3-workspace) for browser and model test flags and [project progress](../PROGRESS.md) for observed results.
 
 ## 1. Unit tests
 
@@ -101,7 +101,7 @@ The assertions below define full-product acceptance. The native parser/storage/i
 5. Run a real retrieval smoke test with the selected embedder, retained reranker and generator; missing dependencies fail explicitly. Record Recall@5/source accuracy and latency on the grouped development fixtures; no comparative improvement is assumed.
 
 **Scenario N: custom endpoints, ownership and explicit fallback**
-1. Configure a supported ordinary endpoint, validate using synthetic input and run a real baseline query. Verify recorded connection/version/model and resolvable citations; Self-RAG requests fail with MODEL_NOT_READY. No local Llama is loaded for ordinary endpoint inference.
+1. Configure a supported ordinary endpoint, validate using synthetic input and run a real baseline query. Verify recorded connection/version/model and resolvable citations. Split Self-RAG additionally requires an admitted fine-tuned runtime with candidate scoring. Generator-only use cannot enable trained reflection.
 2. Reject another principal/workspace's connection ID. Ensure secrets never appear in GETs, traces, logs, notebook artifacts or errors; secret-bearing idempotency uses protected keyed hashes.
 3. Reject private/metadata/IPv6/redirect/DNS-rebinding endpoint targets before credentials or documents are sent. Only operator-configured local-only loopback may bypass the remote URL rule.
 4. Simulate provider timeout, quota, revocation and malformed output. Persist one explicit terminal error, cancel best effort and discard late results; do not switch providers or modes. Explicit selection/new key creates a separate run with its own identity.
@@ -114,12 +114,34 @@ The assertions below define full-product acceptance. The native parser/storage/i
 4. Check cancellation, source deletion, connection revocation, gateway loss and identity change: no subsequent evidence leaves the backend and late output cannot commit. Two users' contexts/caches remain isolated.
 5. Verify a fully local installation with a compatible trained endpoint works without an external provider key. Validate merged/quantized variants independently before admission. Upstream nonstreaming transport must not break backend SSE replay.
 
-**Scenario P: managed Kaggle lifecycle (Phase 6K)**
-1. With the feature disabled, start returns FEATURE_DISABLED and never uses configured developer credentials. Before a live test, record platform permission/access and secure credential-delivery checks.
-2. With authorized access, create only a private owned notebook, load the approved release and expose an authenticated inference-only gateway. Never persist credentials or user document text in notebook source/output. Mark ready only after compatibility probes.
-3. Lose the create response, duplicate delivery and expire worker leases; reconcile one owned resource and reject stale promotion. Validate/stop/edit races cannot revive old or revoked configurations.
-4. Exhaust quota, expire session, revoke credentials and break the tunnel; show unavailable with accurate reason (unknown quota stays unknown), terminate affected work explicitly and offer user-selected custom-endpoint setup for a new run.
-5. Stop/revoke schedules confirmed remote cleanup; unreachable cleanup remains pending/failed and visible. Never remove unrelated notebooks. Immediate credential erasure warns of remote cleanup that can no longer be confirmed.
+The November 15 engineering acceptance uses the explicitly delegated agent operator review in ADR-044. Its ordinary admission check uses the real reviewed runtime and loopback bridge without admission/transport substitution. This is local experimental acceptance; it is not human research validation or certification of untested profiles. [Measured evidence](validation/phase6-validation-2026-11-15.json).
+
+**Scenario P: private Kaggle model bridge (Phase 6K)**
+1. Use the configured local account and explicitly start one private owned session for the selected model role. A query never starts a notebook.
+2. Verify the checked model identity and authenticated loopback bridge. Notebook execution and file routes must be inaccessible through the bridge.
+3. Lose creation responses and repeat lifecycle requests. Reconcile the exact creation receipt and fixed expiry before starting another session.
+4. Check quota, expiry, revocation and gateway loss. Keep failures explicit and require a new query for another selected generator.
+5. Ctrl-C and expiry request exact-session cancellation. Report accepted cancellation and observed gateway denial separately. Keep uncertain cleanup state for reconciliation.
+
+The existing session/probe tests cover ownership, private state, unknown creation, bounded transport, expiry and cleanup. Local-only model tests cover the role-specific bridge and split query identities. Live model and target-device evidence is recorded in PROGRESS. Public application accounts are outside scope.
+
+### Executable Phase 3 regressions and Phase 4 acceptance
+
+- `backend/tests/test_phase2.py` checks worker-independent queued timeout, event negotiation and result links in expired event responses.
+- The Chromium suite verifies lost-receipt upload retry, replay after terminal disconnection, review-version binding, actual endpoint quota loss and stale-content revocation.
+- `backend/tests/test_comparison.py` verifies exact matching and arithmetic, negative and out-of-range amounts, uncertainty, scoped PostgreSQL anchors, later review of a pinned source, independent CSV verification and deletion. The Chromium suite compares real unpublished PDFs, opens both source highlights, downloads the exact difference and checks revocation after deletion.
+- The disposable migration check upgrades, downgrades and re-upgrades through `0008_reflection_recovery`, then compares the schema. The [runbook](LOCAL_DEVELOPMENT.md#phase-3-workspace) lists model and browser flags.
+
+### Executable Phase 5 pilot checks
+
+- `backend/tests/test_reflection.py` regenerates the frozen manifest, rejects split and source corruption, illegal target sequences and unsupported trajectory commits, and checks empty retrieval, tokenizer roundtrips and loss masks. It also rejects incomplete prediction packets, tampered adapters, reviews of a different checkpoint and fewer than 20 distinct manual cases.
+- `scripts/train_reflection.py` checks actual gradient and value changes in the registered rows. It reloads the adapter and tokenizer, compares weights and probe logits, runs one greedy decode and scores validation or explicitly selected test positions. The CPU and CUDA smoke profiles use the open small model. The target Qwen release requires its own checkpoint and manual probes. [Training runbook](LOCAL_DEVELOPMENT.md#phase-5-offline-reflection-training).
+
+### Executable Phase 6 runtime checks
+
+- `backend/tests/test_reflection_runtime.py` covers authentication, body and token budgets, duplicate step replay, hash conflicts, cancellation and runtime instance rotation. Its app integration uses a scripted model service and real pinned retrieval, checks citation resolution, and verifies zero-retrieval and deletion behavior.
+- The recovery test exits a real worker process at confirmed and unconfirmed boundaries. It checks resumption without repeating model calls or retrieval, preserves the original token budget and trace prefix, and checks that ambiguous work terminates once. The private journal is erased at termination.
+- With `DOCUMIND_TEST_REFLECTION_BUNDLE` pointing to the trained FP32 pilot, the test loads the real adapter and compares direct decision probabilities with authenticated loopback output. It checks a passage-conditioned candidate, rejects a changed manifest or absent token rows, and verifies that the app cannot admit the pilot. The conditional evaluator also scores actual frozen test labels without changing that bundle. Current target-runtime evidence and remaining research gates are in [PROGRESS.md](../PROGRESS.md). [Runtime runbook](LOCAL_DEVELOPMENT.md#phase-6-private-reflection-runtime).
 
 ## 3. Evaluation test invariants
 
@@ -147,14 +169,49 @@ The assertions below define full-product acceptance. The native parser/storage/i
 - If a trained reflection checkpoint exists, show actual `Retrieve` and support decision events; run side-by-side comparison on same question.
 - Show evaluation run config and results **only if measured**. Otherwise show clearly marked planned evaluation.
 
+Phase 7 uses the comparison-only Chromium case in the [runbook](LOCAL_DEVELOPMENT.md#phase-4-deterministic-comparison). It runs against the actual API, worker and dispatcher with indexing and inference disabled. It checks upload quota recovery, a lost create receipt, both source links, the exact CSV, and revocation after deletion. The browser injects a recheck response to exercise view invalidation. A separate PostgreSQL test reproduces the actual legacy table rejection, including reads through its evidence links. The two-workspace test creates reports in both workspaces and checks foreign IDs under both URL prefixes. [Observed results](validation/phase7-acceptance-2026-11-15.json).
+
 ## 6. Specification-only change validation
 
 Before claiming this documentation amendment complete: resolve all relative Markdown file links; parse every JSON example; verify illustrative quote lengths/offsets; compare .env.example budgets against RETRIEVAL/SELF_RAG contracts and disabled inference/Kaggle gates; verify connection kinds/states, public API fields, model-step boundary and explicit-fallback rules agree with INFERENCE/DATA_MODEL; check the dependency graph has no training edge into the product release; search for superseded ready/partial/512-default/POST-stream rules outside explicitly historical ADRs. Inspect meaningful contracts manually after automated checks.
 
-These checks validate specification consistency only. The native subset has executable tests and local run evidence in [PROGRESS.md](../PROGRESS.md); full scenarios A-P, model probes and later-service fault injection remain pending. No phase acceptance box may be checked based on documentation validation.
+These checks validate specification consistency only. Executable scenario evidence and remaining product/research gates are tracked in [PROGRESS.md](../PROGRESS.md). No phase acceptance box may be checked based on documentation validation.
 
 ## Phase 1B executable checks
 
 `backend/tests/test_extraction.py` generates owned synthetic native/scanned ruled tables, including empty cells, merged native headers, adjacent non-table text, mixed/rotated PDFs and review corrections. PostgreSQL rejects invalid parent/null/array provenance; old source versions remain readable after reviewed versions complete. Review/read deletion and idempotency boundaries retain regression coverage.
 
 Real OCR tests require the locked optional extra plus a verified model root, and skip explicitly without DOCUMIND_TEST_OCR_ROOT. CI provisions this profile and sets the variable; remote CI execution is not claimed locally. See LOCAL_DEVELOPMENT.md. `scripts/evaluate_extraction.py` records actual CER/WER and elapsed time on two clean synthetic English scans, preserving expected/recognized text, model hashes and environment. Those tiny fixtures are diagnostics, not representative accuracy, confidence calibration or a 2-vCPU capacity benchmark.
+
+## Audit findings 1–5 regression coverage
+
+- `test_phase2.py` verifies unresolved table qualifiers/values and a reviewed native-PDF table through new QA and historical result/event/citation reads.
+- `test_generation_context.py` uses the actual pinned Qwen tokenizer with explicit scripted decoders. It covers long valid retrieval chunks, complete field retention at the head/tail, source offsets, tokenizer identity, local context refusal and incorrect reported input counts. PostgreSQL/PDF/retrieval tests resolve citations and reject competing tables through the Self-RAG app path. Enable `DOCUMIND_TEST_RETRIEVAL=1` after `scripts/setup_search.py --reflection-tokenizer`. These tests load no target-model weights.
+- `test_reflection.py` exercises CLI submission-to-record output through the runtime's review validator, changed bindings/counts, rejected cases, actual wrong generated answers and incomplete evaluation artifacts. Reviewers/verdicts there are synthetic fixtures.
+- `test_kaggle_session.py` verifies exact-session Stop after source/version/privacy edits or notebook deletion, plus account/session binding rejection. `test_kaggle_serving_probe.py` checks the template hash and uploaded runtime dependencies. They do not allocate a live GPU.
+- `test_reflection_runtime.py` keeps real worker exit/recovery tests and the optional trained CPU pilot. Use the full environment flags in the runbook to avoid optional-model/browser skips. Fresh target-model application and GPU-cleanup measurements remain separate release work.
+
+## Cleanup, retry, CI and selected-model workflow checks
+
+`test_kaggle_session.py` now covers receipt durability before readiness validation, explicit operator-confirmed unknown-create reconciliation, unchanged deadlines and cleanup on expired status despite notebook edits. `test_kaggle_serving_probe.py` checks Start failures entering cleanup and expiry cancellation. `test_runtime_lifetime.py` runs actual subprocesses, kills their launcher and verifies the independent guardian stops startup/descendant processes; tokens are absent from the saved model program. These tests allocate no GPU.
+
+The real browser harness drops an accepted query response and requires identical key/body/run ID on retry. It also checks cached answer removal after `QUERY_RECHECK_REQUIRED`. The CPU runtime test uses the freshly trained CI pilot; `DOCUMIND_REQUIRE_REFLECTION_BUNDLE=1` forbids skipping an absent artifact. Its save/reload and authenticated serving checks are separate from target-model quality. Three bounded paraphrase cases and `test_selected_evaluation.py` verify the frozen application plan and its PDF values.
+
+The explicit operator command `scripts/evaluate_selected_workflow.py` is outside automatic test collection. It allocates an authorized private GPU and measures the complete experimental path with clearly labelled admission/transport injection. The [initial 46-case report](validation/selected-pdf-workflow-2026-11-09.json) and [current 73-case validation](validation/phase6-validation-2026-11-15.json) retain actual results and failures. The latter also records a separate ordinary-admission check without those substitutions, independent target probability comparison, and delegated agent review. No automatic CI job starts a Kaggle session or fabricates human approval. Physical provider GPU deallocation and remote CI execution remain independently unverified.
+
+## Local-only split model acceptance
+
+- Bind the UI, app and published stores to loopback and reject an external API host.
+- Validate local generator authentication, configured model identity, message limits and bounded output.
+- Verify that supplied candidate text enters the request hash and the trained runtime scores the exact text without rewriting it.
+- Pin the generator version and capability check alongside the reflection runtime snapshot. Revoke or edit either destination and block subsequent dispatch.
+- Exercise a complete scoped split query and verify the exact source citation. A wrong value still abstains when the critic incorrectly claims full support.
+- Interrupt a split query after confirmed work and replay without another generator request. Unconfirmed provider outcomes fail explicitly.
+- Test private bridge route allowlisting, local authentication, fixed expiry and exact-session cleanup. Report live Kaggle execution separately.
+- Run the reviewed target model and each changed generator/profile through the saved PDF workflow before accepting quality claims.
+
+## Phase 8 controlled evaluation checks
+
+`backend/tests/test_phase8.py` checks the frozen 200-case manifest, original PDF gold spans, preserved pre-training cohort, retrieval variants, independent verification with support scoring disabled, paired statistics, checked archive upload retries and rejection of altered result artifacts. The broader operator run measures both base and trained models on a real private GPU. It is invoked explicitly through the [runbook](LOCAL_DEVELOPMENT.md#phase-8-frozen-benchmark).
+
+A benchmark shard can stop at expiry with a valid partial result. A complete report must include every frozen case exactly once, pass PDF/model/profile checks and recompute scores. The report exits with code 2 while cases are missing. The blinded review packet contains real outputs and empty verdict fields. Generating it supplies zero human judgments. [Measured outcomes and limitations](validation/phase8-benchmark-2026-11-15.md).

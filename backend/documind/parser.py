@@ -1,19 +1,25 @@
 """Bounded PDF extraction with optional local OCR and ruled-table structure."""
 
 import hashlib
+import importlib
 import json
 import math
+import os
+import signal
 import subprocess
 import sys
 import tempfile
+import time
+from contextlib import suppress
 from pathlib import Path
 
 import pymupdf
 
 from documind.errors import AppError
+from documind.parser_sandbox import MEMORY_LIMIT, RESULT_LIMIT, read_output, restrict
 
-PARSER_VERSION = f"pymupdf-{pymupdf.VersionBind}-pdf-v2"
-REVIEW_VERSION = "manual-review-v1"
+PARSER_VERSION = f"pymupdf-{pymupdf.VersionBind}-pdf-v3"
+REVIEW_VERSION = "manual-review-v2"
 
 
 def fingerprint(config: dict) -> str:
@@ -43,6 +49,10 @@ def _extract(source: Path, target: Path, config: dict):
             width, height = page.rect.width, page.rect.height
             if not (math.isfinite(width) and math.isfinite(height) and width > 0 and height > 0):
                 raise AppError("INVALID_PAGE_GEOMETRY", 422)
+            if math.ceil(width) * math.ceil(height) > config["max_page_pixels"]:
+                raise AppError("PAGE_PIXEL_LIMIT", 422)
+            if total_pixels + math.ceil(width) * math.ceil(height) > config["max_document_pixels"]:
+                raise AppError("DOCUMENT_PIXEL_LIMIT", 422)
             native = [
                 block
                 for block in page.get_text("blocks", sort=True)
@@ -80,7 +90,9 @@ def _extract(source: Path, target: Path, config: dict):
                     ocr_engine = load_engine(Path(config["ocr_model_root"]), config["ocr_identity"])
                 blocks = recognize(ocr_engine, image_path, pix.width, pix.height)
                 if config.get("tables_enabled", True):
-                    tables = raster_tables(image_path, blocks, config.get("max_table_cells", 1000))
+                    tables, blocks = raster_tables(
+                        image_path, blocks, config.get("max_table_cells", 1000)
+                    )
                 extractor = "paddleocr"
             else:
                 blocks = [
@@ -163,24 +175,22 @@ def _norm(box, width, height):
     ]
 
 
-def _canonical(blocks, tables):
-    from documind.tables import contains
-
-    items = [
-        (block["bbox_norm"], block)
-        for block in blocks
-        if not any(contains(table["box"], block["bbox_norm"]) for table in tables)
-    ]
+def _canonical(blocks, tables, *, preserve_order=False):
+    items = [(block["bbox_norm"], block) for block in blocks]
     items.extend((table["box"], table) for table in tables)
+    if preserve_order:
+        items.sort(key=lambda entry: entry[1]["source_order"])
+    else:
+        items.sort(key=lambda entry: (entry[0][1], entry[0][0]))
     raw, elements = "", []
-    for box, item in sorted(items, key=lambda entry: (entry[0][1], entry[0][0])):
+    for box, item in items:
         start = len(raw)
         if "cells" not in item:
             text = item["text_raw"]
             raw += text
             elements.append(
                 {
-                    **item,
+                    **{key: value for key, value in item.items() if key != "source_order"},
                     "element_type": "paragraph",
                     "start_char": start,
                     "end_char": len(raw),
@@ -258,11 +268,21 @@ def _outside_table_words(page, tables, width, height):
     from documind.tables import contains
 
     lines = {}
-    for word in page.get_text("words", sort=True):
-        box = _norm(word[:4], width, height)
-        if any(contains(table["box"], box) for table in tables):
-            continue
+    for word in page.get_text("words"):
         lines.setdefault((word[5], word[6]), []).append(word)
+    runs = []
+    for line in lines.values():
+        run = []
+        for word in line:
+            box = _norm(word[:4], width, height)
+            if any(contains(table["box"], box) for table in tables):
+                if run:
+                    runs.append(run)
+                    run = []
+            else:
+                run.append(word)
+        if run:
+            runs.append(run)
     return [
         {
             "text_raw": " ".join(word[4] for word in words) + "\n",
@@ -279,12 +299,24 @@ def _outside_table_words(page, tables, width, height):
             "source_type": "native_text",
             "confidence": None,
         }
-        for words in lines.values()
+        for words in runs
     ]
 
 
 def _child(source: str, target: str, config: dict):
-    # Parser runs in an expendable process, so C-library crashes cannot kill the API/worker.
+    if sys.platform == "darwin" and config.get("ocr_enabled"):
+        try:
+            # Paddle spawns a CPU-feature probe during import. Initialize the
+            # trusted library before confinement and before opening the PDF.
+            importlib.import_module("paddle")
+        except Exception:
+            Path(target, "error.txt").write_text("OCR_RUNTIME_UNAVAILABLE")
+            return
+    try:
+        restrict(Path(target), config)
+    except OSError:
+        Path(target, "error.txt").write_text("PARSER_SANDBOX_UNAVAILABLE")
+        return
     try:
         _extract(Path(source), Path(target), config)
     except AppError as exc:
@@ -295,37 +327,78 @@ def _child(source: str, target: str, config: dict):
 
 def extract_pdf(data: bytes, config: dict, timeout: int, heartbeat=lambda: None) -> list[dict]:
     with tempfile.TemporaryDirectory(prefix="documind-parse-") as folder:
-        target = Path(folder)
+        target = Path(folder).resolve()
         source = target / "original.pdf"
         source.write_bytes(data)
+        if config.get("ocr_enabled"):
+            config = {**config, "ocr_model_root": str(Path(config["ocr_model_root"]).resolve())}
+        environment = {
+            "PATH": "/usr/bin:/bin",
+            "HOME": str(target),
+            "USER": "documind-parser",
+            "TMPDIR": str(target),
+            "LANG": "C.UTF-8",
+            "PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK": "True",
+            "OMP_NUM_THREADS": "2",
+            "OPENBLAS_NUM_THREADS": "2",
+        }
         process = subprocess.Popen(
-            [sys.executable, "-m", "documind.parser", str(source), str(target), json.dumps(config)],
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-m",
+                "documind.parser",
+                str(source),
+                str(target),
+                json.dumps(config),
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            cwd=target,
+            env=environment,
+            start_new_session=True,
         )
-        import time
-
         deadline = time.monotonic() + timeout
         try:
             while process.poll() is None:
                 try:
-                    process.wait(timeout=min(1, max(0.01, deadline - time.monotonic())))
+                    process.wait(timeout=min(0.5, max(0.01, deadline - time.monotonic())))
                 except subprocess.TimeoutExpired:
-                    pass
+                    if sys.platform == "darwin":
+                        rss = subprocess.run(
+                            ["/bin/ps", "-o", "rss=", "-p", str(process.pid)],
+                            capture_output=True,
+                            timeout=1,
+                            check=False,
+                            env=environment,
+                        ).stdout.strip()
+                        if rss.isdigit() and int(rss) * 1024 > MEMORY_LIMIT:
+                            raise AppError("PARSER_MEMORY_LIMIT", 422) from None
                 heartbeat()
                 if process.poll() is None and time.monotonic() >= deadline:
                     raise AppError("PARSER_TIMEOUT", 422)
             if (target / "error.txt").exists():
-                raise AppError((target / "error.txt").read_text(), 422)
-            if process.returncode != 0 or not (target / "result.json").is_file():
+                code = read_output(target / "error.txt", 128).decode()
+                raise AppError(code, 503 if code == "PARSER_SANDBOX_UNAVAILABLE" else 422)
+            if process.returncode != 0:
                 raise AppError("PARSER_CRASH", 422)
-            pages = json.loads((target / "result.json").read_text())
-            for page in pages:
-                page["image"] = (target / f"{page['page_number']}.png").read_bytes()
+            pages = json.loads(read_output(target / "result.json", RESULT_LIMIT))
+            if not isinstance(pages, list) or not 0 < len(pages) <= config["max_pdf_pages"]:
+                raise ValueError("Invalid parsed page count")
+            remaining = config["max_rendered_bytes"]
+            for number, page in enumerate(pages, 1):
+                if page["page_number"] != number:
+                    raise ValueError("Invalid parsed page order")
+                image = read_output(target / f"{number}.png", remaining)
+                remaining -= len(image)
+                page["image"] = image
             return pages
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise AppError("PARSER_CRASH", 422) from exc
         finally:
-            if process.poll() is None:
-                process.kill()
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
             process.wait()
 
 

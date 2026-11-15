@@ -1,0 +1,681 @@
+{
+  "scope": "Expanded synthetic corpus, open Qwen NF4 adapter and Phase 6 recovery.",
+  "application_regression": {
+    "tests": 143,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 114.153,
+    "timestamp": "2026-11-09T11:46:33.270125+05:30"
+  },
+  "checkpoint": {
+    "bundle_manifest_sha256": "fc25ccb871829e91270b9787985d179cf898b10611ae29b458a3a93628c2e6ab",
+    "base_model": "Qwen/Qwen3-4B-Instruct-2507",
+    "base_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "corpus_manifest_sha256": "c71962fa246e072d8215ac0ce9169151af2fa41407d8fea780ef7d9c7e3b7ad3",
+    "protocol_sha256": "316dcc9466e8c12f921f7b709507ef32d2e96790be835e6ef6cfda41aaf41062",
+    "serializer_sha256": "e1e1a2ac6e555678490871714c811eba59fb2d89d1525c1481dad5ee12ad8079",
+    "trainer_sha256": "c3e6133aa81dddc8bc272daa5971b65d147b08b2e1c57b7d3e38263314abe90b",
+    "created_at": "2026-11-09T06:10:07.094796+00:00",
+    "mode": "qlora",
+    "precision": "nf4-fp16-double-quant",
+    "gpu": "Tesla T4",
+    "cuda": "13.0",
+    "packages": {
+      "accelerate": "1.13.0",
+      "bitsandbytes": "0.50.2",
+      "peft": "0.19.1",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.22.2"
+    },
+    "context_limit": 512,
+    "lora_rank": 16,
+    "lora_modules": [
+      "q_proj",
+      "v_proj"
+    ],
+    "epochs_limit": 2,
+    "batch_size": 2,
+    "learning_rate": 0.002,
+    "seed": 2026,
+    "optimizer": "torch.optim.AdamW",
+    "training_seconds": 215.991150942,
+    "peak_gpu_bytes": 6870744576,
+    "supervised_tokens": 1866,
+    "trained_rows_checked": 15,
+    "reload_verified": true,
+    "release_status": "experimental_unapproved",
+    "optimizer_steps": 214,
+    "reload_probe": {
+      "predicted": "[Finish]",
+      "gold": "[Retrieve]"
+    }
+  },
+  "synthetic_corpus_cases": {
+    "train": 54,
+    "validation": 16,
+    "test": 24
+  },
+  "metrics_kind": "teacher_forced_family_constrained",
+  "initial_decision_by_policy": {
+    "validation": {
+      "required_retrieve": {
+        "correct": 0,
+        "n": 8
+      },
+      "eligible_no_retrieve": {
+        "correct": 8,
+        "n": 8
+      }
+    },
+    "test": {
+      "required_retrieve": {
+        "correct": 0,
+        "n": 12
+      },
+      "eligible_no_retrieve": {
+        "correct": 12,
+        "n": 12
+      }
+    }
+  },
+  "metrics": {
+    "test/decision": {
+      "confusion": [
+        {
+          "count": 2,
+          "gold": "[Continue]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 23,
+          "gold": "[Finish]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 12,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 2,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 10,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 35,
+      "n": 49
+    },
+    "test/initial_retrieval": {
+      "confusion": [
+        {
+          "count": 12,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 2,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 10,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 12,
+      "n": 24
+    },
+    "test/initial_retrieval_raw": {
+      "confusion": [
+        {
+          "count": 12,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 2,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 10,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 12,
+      "n": 24
+    },
+    "test/relevance": {
+      "confusion": [
+        {
+          "count": 11,
+          "gold": "[IsREL:No]",
+          "predicted": "[IsREL:Yes]"
+        },
+        {
+          "count": 24,
+          "gold": "[IsREL:Yes]",
+          "predicted": "[IsREL:Yes]"
+        }
+      ],
+      "correct": 24,
+      "n": 35
+    },
+    "test/support": {
+      "confusion": [
+        {
+          "count": 1,
+          "gold": "[IsSUP:Fully]",
+          "predicted": "[IsSUP:Fully]"
+        },
+        {
+          "count": 12,
+          "gold": "[IsSUP:Fully]",
+          "predicted": "[IsSUP:No]"
+        },
+        {
+          "count": 2,
+          "gold": "[IsSUP:No]",
+          "predicted": "[IsSUP:Fully]"
+        },
+        {
+          "count": 9,
+          "gold": "[IsSUP:No]",
+          "predicted": "[IsSUP:No]"
+        }
+      ],
+      "correct": 10,
+      "n": 24
+    },
+    "test/utility": {
+      "confusion": [
+        {
+          "count": 11,
+          "gold": "[IsUSE:1]",
+          "predicted": "[IsUSE:1]"
+        },
+        {
+          "count": 5,
+          "gold": "[IsUSE:5]",
+          "predicted": "[IsUSE:1]"
+        },
+        {
+          "count": 20,
+          "gold": "[IsUSE:5]",
+          "predicted": "[IsUSE:5]"
+        }
+      ],
+      "correct": 31,
+      "n": 36
+    },
+    "validation/decision": {
+      "confusion": [
+        {
+          "count": 1,
+          "gold": "[Continue]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 15,
+          "gold": "[Finish]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 8,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 1,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 7,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 23,
+      "n": 32
+    },
+    "validation/initial_retrieval": {
+      "confusion": [
+        {
+          "count": 8,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 1,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 7,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 8,
+      "n": 16
+    },
+    "validation/initial_retrieval_raw": {
+      "confusion": [
+        {
+          "count": 8,
+          "gold": "[NoRetrieve]",
+          "predicted": "[NoRetrieve]"
+        },
+        {
+          "count": 1,
+          "gold": "[Retrieve]",
+          "predicted": "[Finish]"
+        },
+        {
+          "count": 7,
+          "gold": "[Retrieve]",
+          "predicted": "[NoRetrieve]"
+        }
+      ],
+      "correct": 8,
+      "n": 16
+    },
+    "validation/relevance": {
+      "confusion": [
+        {
+          "count": 7,
+          "gold": "[IsREL:No]",
+          "predicted": "[IsREL:Yes]"
+        },
+        {
+          "count": 15,
+          "gold": "[IsREL:Yes]",
+          "predicted": "[IsREL:Yes]"
+        }
+      ],
+      "correct": 15,
+      "n": 22
+    },
+    "validation/support": {
+      "confusion": [
+        {
+          "count": 8,
+          "gold": "[IsSUP:Fully]",
+          "predicted": "[IsSUP:No]"
+        },
+        {
+          "count": 7,
+          "gold": "[IsSUP:No]",
+          "predicted": "[IsSUP:No]"
+        }
+      ],
+      "correct": 7,
+      "n": 15
+    },
+    "validation/utility": {
+      "confusion": [
+        {
+          "count": 7,
+          "gold": "[IsUSE:1]",
+          "predicted": "[IsUSE:1]"
+        },
+        {
+          "count": 4,
+          "gold": "[IsUSE:5]",
+          "predicted": "[IsUSE:1]"
+        },
+        {
+          "count": 12,
+          "gold": "[IsUSE:5]",
+          "predicted": "[IsUSE:5]"
+        }
+      ],
+      "correct": 19,
+      "n": 23
+    }
+  },
+  "manual_review": {
+    "packet_cases": 24,
+    "completed": false
+  },
+  "approved_https_runtime_verified": false,
+  "limitations": [
+    "Source examples and labels are synthetic.",
+    "Critic-family metrics condition on gold prefixes and constrain the label family.",
+    "The checkpoint missed every required initial retrieval decision on validation and test.",
+    "No trained release is approved.",
+    "Greedy episodes use gold evidence and committed prefixes. This measures model episode behavior without an end-to-end answer or citation claim.",
+    "The selected checkpoint produced wrong dates or currencies while claiming full support. Release approval remains closed."
+  ],
+  "loopback_runtime_probe": {
+    "transport": "authenticated HTTP on the same Kaggle T4 host",
+    "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+    "model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "manifest_sha256": "fc25ccb871829e91270b9787985d179cf898b10611ae29b458a3a93628c2e6ab",
+    "runtime_instance_id": "a4a6d939-fd6c-4314-87d0-c2eb78b1eadf",
+    "mode": "reflection_pilot",
+    "probability_tolerance": 0.001,
+    "cases": [
+      {
+        "case": "document_decision",
+        "labels": {
+          "decision": "[NoRetrieve]"
+        },
+        "input_tokens": 73,
+        "output_tokens": 1,
+        "finish_reason": "complete"
+      },
+      {
+        "case": "general_decision",
+        "labels": {
+          "decision": "[NoRetrieve]"
+        },
+        "input_tokens": 68,
+        "output_tokens": 1,
+        "finish_reason": "complete"
+      },
+      {
+        "case": "evidence_candidate",
+        "labels": {
+          "relevance": "[IsREL:Yes]",
+          "support": "[IsSUP:No]",
+          "utility": "[IsUSE:1]"
+        },
+        "input_tokens": 186,
+        "output_tokens": 13,
+        "finish_reason": "complete"
+      }
+    ]
+  },
+  "validation_selected_trial": {
+    "bundle_manifest_sha256": "b02c75d1cfe40481897e70c23812a7681cc869abd23006d40f2f408b63d9b16f",
+    "created_at": "2026-11-09T06:21:15.140053+00:00",
+    "epochs_limit": 3,
+    "learning_rate": 0.0005,
+    "optimizer": "torch.optim.AdamW",
+    "batch_size": 2,
+    "seed": 2026,
+    "gpu": "Tesla T4",
+    "training_seconds": 323.359614686,
+    "peak_gpu_bytes": 6870744576,
+    "trained_rows_checked": 15,
+    "reload_verified": true,
+    "scored_splits": [
+      "validation"
+    ],
+    "optimizer_steps": 321,
+    "validation_metrics": {
+      "validation/decision": {
+        "confusion": [
+          {
+            "count": 1,
+            "gold": "[Continue]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 15,
+            "gold": "[Finish]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 8,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 8,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 31,
+        "n": 32
+      },
+      "validation/initial_retrieval": {
+        "confusion": [
+          {
+            "count": 8,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 8,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 16,
+        "n": 16
+      },
+      "validation/initial_retrieval_raw": {
+        "confusion": [
+          {
+            "count": 8,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 8,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 16,
+        "n": 16
+      },
+      "validation/relevance": {
+        "confusion": [
+          {
+            "count": 7,
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 15,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:Yes]"
+          }
+        ],
+        "correct": 22,
+        "n": 22
+      },
+      "validation/support": {
+        "confusion": [
+          {
+            "count": 8,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Fully]"
+          },
+          {
+            "count": 7,
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]"
+          }
+        ],
+        "correct": 15,
+        "n": 15
+      },
+      "validation/utility": {
+        "confusion": [
+          {
+            "count": 7,
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 16,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]"
+          }
+        ],
+        "correct": 23,
+        "n": 23
+      }
+    }
+  },
+  "selected_checkpoint_evaluation": {
+    "bundle_manifest_sha256": "9e82e8d234b1964c6604501d164e9ffdc9fc784421ec1ef5cb2178afd22f736e",
+    "adapter_sha256": "1ff3ce069d2eeeeb1bdd8e47056d50389afc9fa527cd7671f86c8447c9b283d8",
+    "validation_bundle_manifest_sha256": "b02c75d1cfe40481897e70c23812a7681cc869abd23006d40f2f408b63d9b16f",
+    "selection_method": "Lower-rate trial selected by validation only. The saved weights were evaluated without retraining.",
+    "holdout_limitation": "The first Qwen run also scored this frozen synthetic holdout.",
+    "raw_and_gold_prefix_test_metrics": {
+      "test/decision": {
+        "confusion": [
+          {
+            "count": 2,
+            "gold": "[Continue]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 23,
+            "gold": "[Finish]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 47,
+        "n": 49
+      },
+      "test/initial_retrieval": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 24,
+        "n": 24
+      },
+      "test/initial_retrieval_raw": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 24,
+        "n": 24
+      },
+      "test/relevance": {
+        "confusion": [
+          {
+            "count": 11,
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 24,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:Yes]"
+          }
+        ],
+        "correct": 35,
+        "n": 35
+      },
+      "test/support": {
+        "confusion": [
+          {
+            "count": 13,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Fully]"
+          },
+          {
+            "count": 11,
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]"
+          }
+        ],
+        "correct": 24,
+        "n": 24
+      },
+      "test/utility": {
+        "confusion": [
+          {
+            "count": 11,
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 25,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]"
+          }
+        ],
+        "correct": 36,
+        "n": 36
+      }
+    },
+    "greedy_model_episodes": {
+      "candidate": {
+        "exact": 34,
+        "n": 47
+      },
+      "decide": {
+        "exact": 23,
+        "n": 25
+      },
+      "initial_eligible": {
+        "exact": 12,
+        "n": 12
+      },
+      "initial_required": {
+        "exact": 12,
+        "n": 12
+      }
+    },
+    "greedy_candidates_by_expected_label": {
+      "[IsREL:No]": {
+        "n": 11,
+        "exact": 11
+      },
+      "[IsSUP:Fully]": {
+        "n": 13,
+        "exact": 6,
+        "model_claimed_full_support": 13
+      },
+      "[IsSUP:No]": {
+        "n": 11,
+        "exact": 5
+      },
+      "general": {
+        "n": 12,
+        "exact": 12
+      }
+    },
+    "greedy_probes_sha256": "299f29c3dbf98a3db80255874c79f2600198fcd6fc259f6a95cf7be3b28d5a4c",
+    "review_packet_sha256": "e87089d323e01c17d2b1aafbc30f4d713a5dc580fcad99918726fb206968ec5c",
+    "human_review_completed": false,
+    "release_status": "experimental_unapproved"
+  }
+}

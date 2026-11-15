@@ -22,9 +22,9 @@ The original Self-RAG PDF does not specify a document application threat model. 
 
 ## 3. Identity and isolation
 
-Local prototype may be single-user only if explicit. Before public deployment: authenticate every route, authorize workspace membership, enforce access at DB query, object download, Qdrant payload and BM25 results. Add tests that intentionally index identical private-looking content in separate workspaces and prove no cross-scope hits.
+DocuMind is a single-operator local application under ADR-042. Require local bearer access on data routes and preserve workspace checks in the database, object downloads, Qdrant and BM25. Separate-workspace tests must prove that no source crosses scope.
 
-Do not rely on browser-side filtering; server must enforce. Avoid sending existence clues via error messages. Apply DATA_MODEL.md scoped composite constraints and INGESTION.md snapshot/visibility checks. Lifecycle deleting blocks all reads immediately, including cached answers, reports, source downloads and event replay. V1 downloads are API-proxied, not public or long-lived signed URLs. Local-only mode binds the API/services to loopback and is not enabled on an internet-facing deployment.
+Enforce access on the server and avoid existence clues in errors. Keep scoped constraints and immutable source checks. Deletion revokes source reads, cached answers, reports and event replay immediately. Bind app listeners and published ports to loopback.
 
 ## 4. Prompt injection policy
 
@@ -65,12 +65,34 @@ Do not rely on browser-side filtering; server must enforce. Avoid sending existe
 - Hosted connection secrets are scoped to the creating principal and workspace, stored encrypted in a secret manager; application records contain opaque references only. Never put a user's key in shared process-global environment, URLs, notebook source, browser storage, analytics, traces or exception output. Transport secret submissions over TLS; secret fields are write-only. Local installation may use private environment configuration. Secret-bearing idempotency hashes must be keyed and protected.
 - API/Kaggle credentials authorize their intended service only. A separate short-lived or rotatable gateway token protects inference; never send a Kaggle account credential to the model endpoint. The model service gets no database, object-store or developer-account credentials. No user's account may be consumed by another workspace member without a future explicit sharing design.
 - Show the configured destination and data-handling terms before sending question/evidence text. Send only required context; disable prompt/body logging and persistent notebook outputs. Uploading a document does not authorize training on it. Third-party retention/deletion limits must be disclosed; stopping a runtime cannot recall already transmitted data.
-- Prevent SSRF for all endpoint validation and inference: accept only supported HTTPS URLs/ports, reject URL userinfo and query-string secrets, block private/loopback/link-local/metadata/reserved addresses for both IPv4 and IPv6, validate DNS at connection time, and disallow redirects. Enforce egress controls against DNS rebinding; TLS certificate verification stays enabled. The local-only loopback exception is operator-controlled and unavailable to hosted user input. Kaggle-generated tunnel URLs pass the same checks.
-- Authenticate the public tunnel/gateway; expose only necessary inference/capability/cancel routes. Do not expose model pull/delete, shell or notebook administration. Bound request/response sizes, time, queue and model concurrency. Browser calls go through DocuMind; a hidden URL or CORS policy is not authentication.
+- External generation endpoints use DNS-pinned HTTPS with certificate verification, no redirects and private/reserved IPv4/IPv6 rejection. The exact literal loopback URL exception is configured by the local operator. The Kaggle bridge validates its exact private session gateway separately.
+- Authenticate both local bridge and upstream inference. Expose only selected inference/capability/cancel routes. Keep notebook administration and upstream execution credentials private. Bound request/response sizes, time and concurrency.
 - Connect/start/stop/config changes require ownership and workspace authorization, CSRF protection where cookie-authenticated, durable idempotency and audit metadata without secrets. Revoke blocks new and subsequent steps immediately; discard late output and cancel best effort. Keep cleanup truthful when platform access fails or credentials are erased.
 - Managed Kaggle uses private, versioned templates and a supported secure secret-delivery mechanism. Validate visibility before starting. Reconcile only owned resources; no quota evasion, keepalive tricks or developer credential fallback. Platform permission and authenticated tunnel support are enablement gates, not assumptions.
 - Treat endpoint capability manifests and completions as untrusted claims: verify against approved release identities/probes, validate schema/budgets and retain independent source checks. Unknown custom servers cannot establish their real weights merely by reporting a matching hash.
 
 ## Implemented local boundary (ADR-022)
 
-The native backend requires a generated local Bearer token on data routes and rejects workspaces other than its configured local workspace; health/schema documentation contain no private source data. Compose publishes ports only on loopback. This is not public user authentication. Private filesystem objects use restricted file permissions and are served only through scoped API reads. Native parsing is isolated with page/pixel/text/render-byte/deadline limits and a memory-limited worker container. PostgreSQL blocks mutation of promoted source records and invalid scoped references. Exceptions/logs omit raw document bodies and secret strings. Public auth, network-facing abuse protection, dependency vulnerability scanning and hosted storage/inference security remain separate release gates.
+The backend requires a local Bearer token and checks the configured workspace. Files retain private permissions. Native parsing keeps page, pixel, text and deadline limits. PostgreSQL blocks promoted-source mutation and invalid scoped references. Logs omit documents and secrets. External model calls require explicit selection and encrypted local credentials.
+
+The PDF subprocess receives a minimal environment, a private input/output directory and read-only access to runtime libraries and configured OCR models. macOS Seatbelt or Linux Landlock and seccomp block network access and limit file access. Resource limits cap parser output and process memory, with wall-clock supervision and process group cleanup in the parent. Worker credentials and backing stores remain outside the parser's file and environment allowlists.
+
+### Phase 2 local endpoint controls
+
+The loopback Qdrant service requires a generated private `QDRANT_API_KEY`, shared with the index client. Compose disables its CORS middleware. Loopback binding alone does not protect an unauthenticated backing store. Upgrade older configuration using the [runbook](LOCAL_DEVELOPMENT.md#existing-qdrant-installations), preserving the index volume.
+
+Keep `INFERENCE_SECRET_KEY` private and stable across the API and worker. Credentials are write-only and stored as ciphertext with owner and version binding. The endpoint version references that secret. Editing or revoking erases the old ciphertext and blocks stale dispatch. Request-key comparisons use a keyed digest for secret-bearing configuration bodies.
+
+The chat adapter rejects URL credentials, query strings, redirects, unsafe ports, site-local IPv6 and nonglobal destination addresses. It resolves all addresses before the call and connects to one vetted numeric address with TLS verification for the original hostname. The exact operator-set loopback exception is limited to 127.0.0.1 or ::1. Authorization and the bounded HTTP request write hold the same workspace lock used by deletion, cancellation and connection changes. The lock releases before waiting for the provider response. An admitted call may finish upstream after cancellation. The worker discards late output and fails uncertain calls without replay.
+
+### Phase 3 local browser boundary
+
+Connection create/edit retains one immutable request and key until its receipt is confirmed. After an unknown outcome, retry reuses the exact credential, destination and expected version. The credential remains in transient component memory, with the visible input cleared and destination editing disabled. It is released on confirmation or a definitive first-attempt client rejection. A rejection during recovery does not erase the earlier unknown outcome. Reloading or leaving the page discards that memory; inspect saved connections before creating another after a reload.
+
+Next.js listens on loopback and forwards same-origin requests to a fixed loopback API. The local Bearer token stays in server configuration. Endpoint credentials pass through the browser only during setup. The proxy rejects cross-origin, unexpected Host and Fetch Metadata headers. Protected responses use no-store caching.
+
+## Local model and private Kaggle boundaries
+
+The fine-tuned model and generator are independently selected. Keep their credentials separate and pin both identities. An external candidate is untrusted text. Labels come from the trained runtime, while the independent verifier checks supported claims.
+
+The private Kaggle bridge accepts a local Bearer token and allowlists the chosen role's inference routes. Jupyter execution, file APIs and upstream gateway credentials stay private. The local operator command, original expiry, detached watcher and remote process guardian own lifecycle. Public collection of Kaggle keys is outside scope.

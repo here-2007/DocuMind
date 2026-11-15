@@ -7,9 +7,12 @@ from sqlalchemy.engine import Engine
 
 from documind import schema as t
 from documind.config import Settings
+from documind.db import artifact_lock
 from documind.errors import AppError
 from documind.parser import PARSER_VERSION, REVIEW_VERSION, fingerprint
 from documind.storage import ObjectStore
+
+DISPATCH_COOLDOWN = timedelta(seconds=60)
 
 
 def now():
@@ -34,6 +37,44 @@ class Repository:
     def authorize(self, workspace_id: UUID):
         if workspace_id != self.cfg.local_workspace_id:
             raise AppError("NOT_FOUND", 404)
+
+    def workspace_exists(self):
+        with self.engine.connect() as c:
+            return (
+                c.scalar(
+                    sa.select(t.workspaces.c.id).where(
+                        t.workspaces.c.id == self.cfg.local_workspace_id
+                    )
+                )
+                is not None
+            )
+
+    def upload_request(self, c, workspace_id, key):
+        return (
+            c.execute(
+                sa.select(t.request_keys).where(
+                    t.request_keys.c.workspace_id == workspace_id,
+                    t.request_keys.c.principal_id == workspace_id,
+                    t.request_keys.c.operation == "upload",
+                    t.request_keys.c.key == key,
+                )
+            )
+            .mappings()
+            .first()
+        )
+
+    def upload_limit(self, workspace_id, key):
+        self.authorize(workspace_id)
+        limit = self.cfg.max_upload_bytes
+        with self.engine.connect() as c:
+            previous = self.upload_request(c, workspace_id, key)
+            if previous:
+                doc = self._document(c, workspace_id, previous["resource_id"])
+                size = doc["original_size_bytes"]
+                if size is None:
+                    size = self.objects.source_size(doc["object_key"], sha256=doc["sha256"])
+                limit = max(limit, size)
+        return limit
 
     def parser_config(self):
         config = {
@@ -62,37 +103,44 @@ class Repository:
         digest = hashlib.sha256(data).hexdigest()
         request_hash = fingerprint({"sha256": digest, "filename": filename})
         document_id, job_id = uuid4(), uuid4()
-        config = self.parser_config()
-        version = fingerprint(
-            {
-                "document_id": str(document_id),
-                "sha256": digest,
-                "parser": PARSER_VERSION,
-                "config": config,
-            }
-        )
         object_key = f"{workspace_id}/{document_id}/original.pdf"
         # Store before acknowledging upload; a failed commit leaves a collectable orphan.
         with self.engine.begin() as c:
-            c.execute(
-                sa.select(t.workspaces).where(t.workspaces.c.id == workspace_id).with_for_update()
-            )
-            previous = (
-                c.execute(
-                    sa.select(t.request_keys).where(
-                        t.request_keys.c.workspace_id == workspace_id,
-                        t.request_keys.c.principal_id == workspace_id,
-                        t.request_keys.c.operation == "upload",
-                        t.request_keys.c.key == key,
-                    )
+            if (
+                c.scalar(
+                    sa.select(t.workspaces.c.id)
+                    .where(t.workspaces.c.id == workspace_id)
+                    .with_for_update()
                 )
-                .mappings()
-                .first()
-            )
+                is None
+            ):
+                raise AppError("WORKSPACE_NOT_INITIALIZED", 503)
+            previous = self.upload_request(c, workspace_id, key)
             if previous:
                 if previous["request_hash"] != request_hash:
                     raise AppError("IDEMPOTENCY_CONFLICT", 409)
                 return self._summary(c, workspace_id, previous["resource_id"], previous["job_id"])
+            if len(data) > self.cfg.max_upload_bytes:
+                raise AppError("FILE_TOO_LARGE", 413)
+            document_count = c.scalar(
+                sa.select(sa.func.count())
+                .select_from(t.documents)
+                .where(
+                    t.documents.c.workspace_id == workspace_id,
+                    t.documents.c.lifecycle_status != "deleted",
+                )
+            )
+            if document_count >= self.cfg.max_workspace_documents:
+                raise AppError("WORKSPACE_DOCUMENT_LIMIT", 409)
+            config = self.parser_config()
+            version = fingerprint(
+                {
+                    "document_id": str(document_id),
+                    "sha256": digest,
+                    "parser": PARSER_VERSION,
+                    "config": config,
+                }
+            )
             self.objects.put(object_key, data, "application/pdf")
             c.execute(
                 t.documents.insert().values(
@@ -101,6 +149,7 @@ class Repository:
                     filename=filename,
                     media_type="application/pdf",
                     sha256=digest,
+                    original_size_bytes=len(data),
                     object_key=object_key,
                     latest_ingestion_version=version,
                 )
@@ -174,6 +223,39 @@ class Repository:
                     t.jobs.c.ingestion_version == d["latest_ingestion_version"],
                 )
             ).scalar_one()
+        published_version = None
+        if self.cfg.indexing_enabled:
+            published_version = c.scalar(
+                sa.select(t.publication_documents.c.ingestion_version)
+                .join(
+                    t.workspaces,
+                    sa.and_(
+                        t.workspaces.c.id == t.publication_documents.c.workspace_id,
+                        t.workspaces.c.active_publication_id
+                        == t.publication_documents.c.publication_id,
+                    ),
+                )
+                .where(
+                    t.publication_documents.c.workspace_id == workspace_id,
+                    t.publication_documents.c.document_id == document_id,
+                )
+            )
+        preview_version = d["preview_ingestion_version"]
+        preview_available = False
+        if preview_version is not None:
+            previews = c.execute(
+                sa.select(t.pages.c.render_object_key, t.pages.c.render_size_bytes).where(
+                    t.pages.c.workspace_id == workspace_id,
+                    t.pages.c.document_id == document_id,
+                    t.pages.c.ingestion_version == preview_version,
+                )
+            ).all()
+            try:
+                preview_available = bool(previews) and all(
+                    size in (None, self.objects.source_size(key)) for key, size in previews
+                )
+            except AppError:
+                preview_available = False
         return {
             "document_id": document_id,
             "job_id": job_id,
@@ -182,18 +264,31 @@ class Repository:
             "lifecycle_status": d["lifecycle_status"],
             "latest_ingestion_version": d["latest_ingestion_version"],
             "preview_ingestion_version": d["preview_ingestion_version"],
-            "published_ingestion_version": None,
+            "published_ingestion_version": published_version,
             "extraction_status": v["extraction_status"],
-            "index_status": v["index_status"],
+            "index_status": "published"
+            if published_version == d["latest_ingestion_version"]
+            else v["index_status"],
             "error_code": v["error_code"],
-            "preview_available": d["preview_ingestion_version"] is not None,
-            "searchable": False,
+            "preview_available": preview_available,
+            "searchable": published_version is not None,
         }
 
     def summary(self, workspace_id, document_id):
         self.authorize(workspace_id)
         with self.engine.connect() as c:
             return self._summary(c, workspace_id, document_id)
+
+    def original(self, workspace_id, document_id):
+        self.authorize(workspace_id)
+        with self.engine.connect() as c:
+            doc = self._document(c, workspace_id, document_id)
+            try:
+                return self.objects.read_source(
+                    doc["object_key"], size=doc["original_size_bytes"], sha256=doc["sha256"]
+                )
+            finally:
+                self._document(c, workspace_id, document_id)
 
     def list_documents(self, workspace_id, limit, after=None):
         self.authorize(workspace_id)
@@ -223,13 +318,18 @@ class Repository:
             ).scalar_one_or_none()
             if visible not in {"complete", "needs_review"}:
                 raise AppError("NOT_FOUND", 404)
-            q = sa.select(t.pages).where(
+            scope = (
                 t.pages.c.workspace_id == workspace_id,
                 t.pages.c.document_id == document_id,
                 t.pages.c.ingestion_version == version,
             )
+            q = sa.select(t.pages).where(*scope)
             if page_number is not None:
                 q = q.where(t.pages.c.page_number == page_number)
+                count = (
+                    sa.select(sa.func.count()).select_from(t.pages).where(*scope).scalar_subquery()
+                )
+                q = q.add_columns(count.label("page_count"))
             rows = [dict(x) for x in c.execute(q.order_by(t.pages.c.page_number)).mappings()]
             self._document(c, workspace_id, document_id)
             return rows
@@ -308,6 +408,8 @@ class Repository:
             )
             if not j:
                 raise AppError("NOT_FOUND", 404)
+            if j["kind"] not in {"ingest", "delete"}:
+                raise AppError("NEW_REQUEST_REQUIRED", 409)
             if j["kind"] == "delete":
                 c.execute(
                     sa.select(t.documents)
@@ -333,6 +435,7 @@ class Repository:
                             status="queued",
                             attempts=0,
                             next_attempt_at=now(),
+                            dispatch_after=None,
                             error_code=None,
                             finished_at=None,
                         )
@@ -421,13 +524,13 @@ class Repository:
                 }
             )
             existing = c.execute(
-                sa.select(t.jobs.c.id).where(
+                sa.select(t.jobs.c.id, t.jobs.c.status).where(
                     t.jobs.c.document_id == document_id,
                     t.jobs.c.ingestion_version == version,
                     t.jobs.c.kind == "ingest",
                 )
-            ).scalar_one_or_none()
-            job_id = existing or uuid4()
+            ).one_or_none()
+            job_id = existing.id if existing else uuid4()
             if not existing:
                 c.execute(
                     t.versions.insert().values(
@@ -450,10 +553,11 @@ class Repository:
                         next_attempt_at=now(),
                     )
                 )
+            pointers = {"latest_ingestion_version": version}
+            if existing and existing.status == "succeeded":
+                pointers["preview_ingestion_version"] = version
             c.execute(
-                t.documents.update()
-                .where(t.documents.c.id == document_id)
-                .values(latest_ingestion_version=version)
+                t.documents.update().where(t.documents.c.id == document_id).values(**pointers)
             )
             c.execute(
                 t.request_keys.insert().values(
@@ -469,8 +573,13 @@ class Repository:
             return self._summary(c, workspace_id, document_id, job_id)
 
     def delete(self, workspace_id, document_id):
+        from documind.investigations import revoke_source as revoke_investigations
+        from documind.phase_jobs import lock_workspace
+        from documind.publications import revoke_source
+
         self.authorize(workspace_id)
         with self.engine.begin() as c:
+            lock_workspace(c, workspace_id)
             d = (
                 c.execute(
                     sa.select(t.documents)
@@ -497,8 +606,10 @@ class Repository:
             c.execute(
                 t.documents.update()
                 .where(t.documents.c.id == document_id)
-                .values(lifecycle_status="deleting")
+                .values(lifecycle_status="deleting", last_published_ingestion_version=None)
             )
+            revoke_source(c, workspace_id, document_id)
+            revoke_investigations(c, workspace_id, document_id)
             c.execute(
                 t.jobs.update()
                 .where(
@@ -526,15 +637,17 @@ class Repository:
             j = c.execute(sa.select(t.jobs).where(t.jobs.c.id == job_id)).mappings().first()
             if not j:
                 return None
-            d = (
-                c.execute(
-                    sa.select(t.documents)
-                    .where(t.documents.c.id == j["document_id"])
-                    .with_for_update()
+            d = None
+            if j["document_id"] is not None:
+                d = (
+                    c.execute(
+                        sa.select(t.documents)
+                        .where(t.documents.c.id == j["document_id"])
+                        .with_for_update()
+                    )
+                    .mappings()
+                    .one()
                 )
-                .mappings()
-                .one()
-            )
             j = (
                 c.execute(sa.select(t.jobs).where(t.jobs.c.id == job_id).with_for_update())
                 .mappings()
@@ -553,6 +666,7 @@ class Repository:
                     attempts=j["attempts"] + 1,
                     lease_token=token,
                     lease_expires_at=now() + timedelta(seconds=self.cfg.job_lease_seconds),
+                    dispatch_after=None,
                     started_at=now(),
                 )
             )
@@ -570,8 +684,11 @@ class Repository:
                 **dict(j),
                 "lease_token": token,
                 "attempts": j["attempts"] + 1,
-                "object_key": d["object_key"],
-                "sha256": d["sha256"],
+                **(
+                    {key: d[key] for key in ("object_key", "sha256", "original_size_bytes")}
+                    if d
+                    else {}
+                ),
             }
 
     def heartbeat(self, job):
@@ -590,6 +707,8 @@ class Repository:
                 raise AppError("LEASE_LOST", 409)
 
     def promote(self, job, parsed):
+        from documind.phase_jobs import lock_workspace
+
         workspace_id, document_id, version = (
             job["workspace_id"],
             job["document_id"],
@@ -598,13 +717,14 @@ class Repository:
         staged = []
         hashes = []
         for page in parsed:
-            self.heartbeat(job)
             page_id = uuid5(document_id, f"{version}:{page['page_number']}")
             image = page["image"]
             hashes.append(hashlib.sha256(image).hexdigest())
             key = f"{workspace_id}/{document_id}/{version}/{page['page_number']}.png"
-            self.objects.put(key, image, "image/png")
-            staged.append((page_id, key, page))
+            with artifact_lock(self.engine, document_id):
+                self.heartbeat(job)
+                self.objects.put(key, image, "image/png")
+            staged.append((page_id, key, hashes[-1], page))
         content = [{k: v for k, v in p.items() if k != "image"} for p in parsed]
         output_hash = fingerprint({"pages": content, "images": hashes})
         status = (
@@ -613,9 +733,10 @@ class Repository:
             else "complete"
         )
         with self.engine.begin() as c:
+            lock_workspace(c, workspace_id)
             self._document(c, workspace_id, document_id, lock=True)
             self._fence(c, job)
-            for page_id, key, p in staged:
+            for page_id, key, image_sha, p in staged:
                 c.execute(
                     t.pages.insert().values(
                         id=page_id,
@@ -623,6 +744,8 @@ class Repository:
                         document_id=document_id,
                         ingestion_version=version,
                         render_object_key=key,
+                        render_size_bytes=len(p["image"]),
+                        render_sha256=image_sha,
                         **{
                             k: p[k]
                             for k in (
@@ -701,7 +824,12 @@ class Repository:
             raise AppError("LEASE_LOST", 409)
 
     def fail(self, job, code, *, permanent=False):
+        from documind.phase_jobs import fail as fail_phase_job
+        from documind.phase_jobs import lock_workspace
+
         with self.engine.begin() as c:
+            if job["document_id"] is None:
+                lock_workspace(c, job["workspace_id"])
             c.execute(
                 sa.select(t.documents)
                 .where(t.documents.c.id == job["document_id"])
@@ -712,6 +840,9 @@ class Repository:
             except AppError:
                 return
             retry = not permanent and job["attempts"] < self.cfg.job_max_attempts
+            if not retry and job["document_id"] is None:
+                fail_phase_job(c, job, code)
+                return
             c.execute(
                 t.jobs.update()
                 .where(t.jobs.c.id == job["id"])
@@ -742,11 +873,28 @@ class Repository:
                 )
 
     def due_jobs(self):
+        from documind.phase_jobs import fail as fail_phase_job
+        from documind.phase_jobs import lock_workspace, query_can_resume
+
         with self.engine.connect() as c:
+            deadline_expired = sa.exists().where(
+                t.query_runs.c.workspace_id == t.jobs.c.workspace_id,
+                t.query_runs.c.id == t.jobs.c.id,
+                t.query_runs.c.deadline <= now(),
+            )
             expired = (
                 c.execute(
                     sa.select(t.jobs.c.id).where(
-                        t.jobs.c.status == "running", t.jobs.c.lease_expires_at < now()
+                        sa.or_(
+                            sa.and_(
+                                t.jobs.c.status == "running", t.jobs.c.lease_expires_at < now()
+                            ),
+                            sa.and_(
+                                t.jobs.c.kind == "query",
+                                t.jobs.c.status.in_(("queued", "running")),
+                                deadline_expired,
+                            ),
+                        )
                     )
                 )
                 .scalars()
@@ -755,6 +903,8 @@ class Repository:
         for job_id in expired:
             with self.engine.begin() as c:
                 j = c.execute(sa.select(t.jobs).where(t.jobs.c.id == job_id)).mappings().one()
+                if j["document_id"] is None:
+                    lock_workspace(c, j["workspace_id"])
                 c.execute(
                     sa.select(t.documents)
                     .where(t.documents.c.id == j["document_id"])
@@ -765,9 +915,38 @@ class Repository:
                     .mappings()
                     .one()
                 )
-                if j["status"] != "running" or j["lease_expires_at"] >= now():
+                if j["status"] not in {"queued", "running"}:
+                    continue
+                lease_expired = j["status"] == "running" and j["lease_expires_at"] < now()
+                if j["kind"] == "query":
+                    run = c.execute(
+                        sa.select(
+                            t.query_runs.c.mode,
+                            t.query_runs.c.runtime_progress,
+                            t.query_runs.c.generation_started,
+                            t.query_runs.c.deadline,
+                            t.query_runs.c.revoked_at,
+                        ).where(t.query_runs.c.id == job_id)
+                    ).one()
+                    if (
+                        run.revoked_at
+                        or run.deadline <= now()
+                        or (lease_expired and not query_can_resume(run._mapping))
+                    ):
+                        if run.revoked_at:
+                            code = "SOURCE_UNAVAILABLE"
+                        elif run.deadline <= now():
+                            code = "QUERY_TIMEOUT"
+                        else:
+                            code = "GENERATION_OUTCOME_UNKNOWN"
+                        fail_phase_job(c, j, code)
+                        continue
+                if not lease_expired:
                     continue
                 status = "failed" if j["attempts"] >= self.cfg.job_max_attempts else "queued"
+                if status == "failed" and j["document_id"] is None:
+                    fail_phase_job(c, j, "WORKER_LEASE_EXPIRED")
+                    continue
                 c.execute(
                     t.jobs.update()
                     .where(t.jobs.c.id == job_id)
@@ -797,7 +976,7 @@ class Repository:
             return (
                 c.execute(
                     sa.select(t.jobs.c.id)
-                    .where(t.jobs.c.status == "queued", t.jobs.c.next_attempt_at <= now())
+                    .where(*self.dispatchable(now()))
                     .order_by(t.jobs.c.created_at)
                     .limit(100)
                 )
@@ -805,43 +984,102 @@ class Repository:
                 .all()
             )
 
-    def cleanup_document(self, job):
-        # Deletion already revoked access. Retain source metadata tombstones for retry/idempotency.
-        for obj in self.objects.keys(f"{job['workspace_id']}/{job['document_id']}/"):
-            self.heartbeat(job)
-            self.objects.delete(obj["Key"])
+    @staticmethod
+    def dispatchable(when):
+        return (
+            t.jobs.c.status == "queued",
+            t.jobs.c.next_attempt_at <= when,
+            sa.or_(t.jobs.c.dispatch_after.is_(None), t.jobs.c.dispatch_after <= when),
+        )
+
+    def reserve_dispatch(self, job_id):
+        when = now()
         with self.engine.begin() as c:
-            c.execute(
-                sa.select(t.documents)
-                .where(t.documents.c.id == job["document_id"])
-                .with_for_update()
-            )
-            self._fence(c, job)
-            for table in [t.elements, t.pages]:
-                c.execute(
-                    table.delete().where(
-                        table.c.workspace_id == job["workspace_id"],
-                        table.c.document_id == job["document_id"],
-                    )
+            return (
+                c.scalar(
+                    t.jobs.update()
+                    .where(t.jobs.c.id == job_id, *self.dispatchable(when))
+                    .values(dispatch_after=when + DISPATCH_COOLDOWN)
+                    .returning(t.jobs.c.id)
                 )
-            c.execute(
-                t.documents.update()
-                .where(t.documents.c.id == job["document_id"])
-                .values(
-                    lifecycle_status="deleted",
-                    preview_ingestion_version=None,
-                    filename="deleted.pdf",
-                )
-            )
-            c.execute(
-                t.jobs.update()
-                .where(t.jobs.c.id == job["id"])
-                .values(
-                    status="succeeded", finished_at=now(), lease_token=None, lease_expires_at=None
-                )
+                is not None
             )
 
+    def cleanup_document(self, job):
+        from documind.phase_jobs import lock_workspace
+        from documind.publications import active_id, enqueue_publication, purge_indexes
+
+        purge_indexes(self, job)
+        with artifact_lock(self.engine, job["document_id"]):
+            # Access is revoked. Retain metadata tombstones for retry/idempotency.
+            for obj in self.objects.keys(f"{job['workspace_id']}/{job['document_id']}/"):
+                self.heartbeat(job)
+                self.objects.delete(obj["Key"])
+            with self.engine.begin() as c:
+                lock_workspace(c, job["workspace_id"])
+                c.execute(
+                    sa.select(t.documents)
+                    .where(t.documents.c.id == job["document_id"])
+                    .with_for_update()
+                )
+                self._fence(c, job)
+                for table in [t.elements, t.pages]:
+                    c.execute(
+                        table.delete().where(
+                            table.c.workspace_id == job["workspace_id"],
+                            table.c.document_id == job["document_id"],
+                        )
+                    )
+                c.execute(
+                    t.versions.update()
+                    .where(
+                        t.versions.c.workspace_id == job["workspace_id"],
+                        t.versions.c.document_id == job["document_id"],
+                        t.versions.c.config_json.has_key("review"),
+                    )
+                    .values(config_json={})
+                )
+                c.execute(
+                    t.documents.update()
+                    .where(t.documents.c.id == job["document_id"])
+                    .values(
+                        lifecycle_status="deleted",
+                        preview_ingestion_version=None,
+                        filename="deleted.pdf",
+                    )
+                )
+                c.execute(
+                    t.jobs.update()
+                    .where(t.jobs.c.id == job["id"])
+                    .values(
+                        status="succeeded",
+                        finished_at=now(),
+                        lease_token=None,
+                        lease_expires_at=None,
+                    )
+                )
+
+                if self.cfg.indexing_enabled and active_id(c, job["workspace_id"]) is None:
+                    enqueue_publication(c, self, job["workspace_id"])
+
     def collect_orphans(self):
+        from documind.publications import artifact_referenced, collect_failed_indexes
+
+        collect_failed_indexes(self)
+        with self.engine.begin() as c:
+            cutoff = now() - timedelta(days=self.cfg.query_event_retention_days)
+            c.execute(
+                t.query_events.delete().where(
+                    t.query_events.c.workspace_id == self.cfg.local_workspace_id,
+                    t.query_events.c.query_id.in_(
+                        sa.select(t.jobs.c.id).where(
+                            t.jobs.c.workspace_id == self.cfg.local_workspace_id,
+                            t.jobs.c.kind == "query",
+                            t.jobs.c.finished_at < cutoff,
+                        )
+                    ),
+                )
+            )
         cutoff = now() - timedelta(seconds=self.cfg.orphan_grace_seconds)
         for obj in self.objects.keys():
             if obj["LastModified"] >= cutoff:
@@ -874,5 +1112,5 @@ class Repository:
                     if doc_id
                     else None
                 )
-                if not used and not in_progress:
+                if not used and not in_progress and not artifact_referenced(c, key):
                     self.objects.delete(key)

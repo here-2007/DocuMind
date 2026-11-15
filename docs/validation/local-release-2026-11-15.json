@@ -1,0 +1,151 @@
+{
+  "recorded_at": "2026-11-15T13:11:50.162038+00:00",
+  "scope": "Delegated operator review of the immutable Qwen v4 checkpoint and clean local application setup using pinned cached weights.",
+  "final_model_release": {
+    "decision": "accepted_for_opt_in_local_experimental_use_with_previously_validated_nf4_cuda_reflection_profiles",
+    "checkpoint": "Qwen/Qwen3-4B-Instruct-2507",
+    "base_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "base_model_card_declared_license": "apache-2.0",
+    "approved_configuration": {
+      "reflection": "nf4-cuda on the existing private Kaggle bridge",
+      "integrated_generator": "same nf4-cuda checkpoint",
+      "split_generator": "pinned Qwen3-4B-Instruct-2507 fp16-mps base; one safe answer-coverage miss retained"
+    },
+    "review_kind": "delegated_agent",
+    "immutable_review_bindings": {
+      "bundle_sha256": "0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543",
+      "corpus_sha256": "0f3864f7040332dbeefd6d5bdd7dc82685bcadf513d74c67617e897f13321beb",
+      "review_sha256": "b80433e843cf9a1708aebaacaa5aaf803c711efcfda1c20f5f79472af549e084",
+      "generated_evaluation_sha256": "da16d5a6fd579e186a8ae279f0e2c7813ed81293e12c5ff199da89087c4abb65",
+      "release_status": "experimental_unapproved",
+      "reviewer": "Codex (delegated agent; authorized by here-2007 on 2026-11-15)",
+      "rechecked_case_counts": {
+        "addition": 4,
+        "currency": 4,
+        "due_date": 4,
+        "reference": 4,
+        "total": 4
+      },
+      "greedy_episodes": 144,
+      "conditional_labels": 324,
+      "prior_model_workflow": {
+        "integrated_correct": 73,
+        "split_correct": 72,
+        "cases": 73,
+        "split_misses": [
+          "injection"
+        ]
+      }
+    },
+    "prior_validation_report": "phase6-validation-2026-11-15.json",
+    "prior_validation_report_sha256": "b0298338a5eb16b734850d690f8a4766753e11b12bdd4d469509d1eee18abf2f",
+    "self_rag_default_enabled": false,
+    "broader_research_release": "pending"
+  },
+  "local_setup": {
+    "decision": "accepted_for_native_compose_and_host_evidence_only_workspace_with_verified_cached_models",
+    "source": "Clean export of the current working tree, including uncommitted work",
+    "source_files_reverified": 161,
+    "hardware": {
+      "machine": "Apple M4 MacBook Air",
+      "architecture": "arm64",
+      "memory_gib": 16,
+      "macos": "26.6.2"
+    },
+    "fresh_python_lock_install": true,
+    "fresh_npm_install": true,
+    "frontend_typecheck_and_production_build": true,
+    "native_compose_smoke_passed": true,
+    "host_worker_pool": "solo",
+    "host_migration": "0009_split_reflection",
+    "alembic_check": "passed",
+    "ruff": "passed",
+    "lockfile_check": "passed",
+    "suite": {
+      "tests": 262,
+      "skipped": 0,
+      "failures": 0,
+      "warnings": 5,
+      "seconds": 150.641,
+      "initial_setup_error": "The first run inherited the optional live fp16-mps pin and 15 scripted-runtime fixture tests failed admission. The full suite was then rerun with the default profile."
+    },
+    "browser": {
+      "checks": {
+        "cross_origin_denied": true,
+        "real_ui_uploads": true,
+        "baseline_query_sse_citation_source": true,
+        "decimal_comparison_sources_csv": true,
+        "mobile_no_horizontal_overflow": true,
+        "browser_secret_boundary": true
+      },
+      "page_errors": 0,
+      "observed_browser_auth_headers": 0,
+      "mobile_width_px": {
+        "viewport": 390,
+        "content": 390
+      },
+      "invoice_inr": "1100.00",
+      "purchase_order_inr": "1000.00",
+      "difference_inr": "100.00",
+      "csv_evidence_rows": 2
+    },
+    "cache": {
+      "official_weight_hashes_verified": 5,
+      "fresh_weights_downloaded": false,
+      "configured_registry_access_http": 403,
+      "anonymous_metadata_http": 200
+    },
+    "cleanup": {
+      "disposable_containers_and_volumes_removed": true,
+      "task_image_tag_removed": true,
+      "test_ports_closed": true,
+      "persistent_stack_preserved": true,
+      "persistent_database_revision": "0009_split_reflection",
+      "persistent_document_count_unchanged_across_cleanup": true
+    }
+  },
+  "local_fp16_mps_reflection": {
+    "decision": "not_accepted_on_tested_device",
+    "first_start": "loaded exact weights; compatibility probe failed with the application and retrieval worker resident",
+    "second_start": "runtime started before the application; instrumentation recorded a 4.01-second successful readiness decision and ordinary app admission",
+    "first_query": "initial decision and retrieval completed; candidate inference timed out",
+    "started_cases": 42,
+    "planned_cases": 73,
+    "terminal_errors": {
+      "INFERENCE_TIMEOUT": 1,
+      "RUNTIME_BUSY": 41
+    },
+    "interpretation": "Later requests were denied while the timed-out step was busy. This aborted run does not measure answer accuracy.",
+    "weights_and_production_runtime_source_changed": false
+  },
+  "private_evidence_directory": ".data/final-local-acceptance-2026-11-15",
+  "private_evidence_sha256": {
+    "source-export.json": "98d421b2cd6bea4bcd31e3a67ee7ab82c082f58fb09a979eba057fdb43c9e9ac",
+    "release-bindings-recheck.json": "0448d31eaa31c05b71ebe44be6e79a639dba84521b3641134e6fcb2ba61cfd29",
+    "license-evidence.json": "086b11fccac51280dfe045dbf790bdb6837bae1677d93537381dca85fba61e68",
+    "cache-integrity.json": "48f6879e17e7f2924baa3a2c88a15687cbdc98671b63fa8878b9166cd835d3e0",
+    "fresh-download-access.json": "edc114a93fab9276331744d3b399b73bf03f60a9efe70a6db41a8261dee8ceae",
+    "python-install.log": "dc8bdfca1680104896774cff75f10821c28de35e257db2603ac4a3d4a1e7bba4",
+    "frontend-install.log": "c464ab216664e8dfb0cf50bd13a53202d00d64ef8f008fadf0502e07c0fd5014",
+    "frontend-typecheck.log": "758eba89ba9364bdf3f3b411ae73cd09ec143bc7318b56c25d39311e59c8ed14",
+    "frontend-build.log": "1049d705cd53a48230f57abf2b990cd9c31aff9d3c8304448d69156437752f0a",
+    "native-documented-smoke.log": "cdef0fb923c536f43bdbed3c182a8ce421259824b12840dba09050cb3559d44a",
+    "native-documented-result.json": "43803dcfc0965364d75c3d59985f453bc3d75da8c19d44f207b639b4c24bde4d",
+    "host-schema-check.log": "43d345b67ace77ab8c4cbf575a3baddf66e8623cf7d1e0b78e602b1d641ecf50",
+    "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "lock-check.log": "ee0b027e715d7bc0394043eefd2ec6791acd8cf2266c110e8bbeec575bca48af",
+    "clean-suite.xml": "d43b6174834c5f1ba3ac4eab6d5ac56248c40f75932e71a708c048007717fa15",
+    "clean-default-suite.xml": "a432a119c166bb66ae433a5d5fd7efcef7184bc48de84a2d3e878a5bf219fd50",
+    "cached-model-probe.log": "e236462e6437b8e5f1b688910ec1688e53923af6e9a520b399d4c621cad761a4",
+    "browser-result.json": "a2051184b350b399de231d4ecfaa4559361ee57c2a34a00eeefbc307bbff5dd4",
+    "browser-acceptance.json": "a2dbf793f12d3344687666d66a0f519b7240e39b37db71ac54d836869407e5a5",
+    "comparison.csv": "2154572dab92b43b15cb7273a600ebc04d1f6bf8f0fedb2c3770f96b6fa727c2",
+    "desktop.png": "a48075a0c896d30a05997b36907616f6f26e092d2c54a8d95337610208280fe2",
+    "mobile.png": "d2ac07e5cef24002888c8047786f24bf93a81ee1e370b4ad42a1cc40f0ae86ec",
+    "first-trained-runtime.log": "7e6ee30c16e65d951510c6a3fb832ccf072f7b7d488cb745ea0ae708adf7c978",
+    "trained-runtime.log": "5590371ff489b0a24099b98b58ce3ffe1ff39b1bf2435e1523551b5b3c5eeed8",
+    "first-local-mps-workflow.json": "c6cd29d0f4096a32ac0b07afdaf9b546403e046c9c75b0645b39b5f424172227",
+    "local-mps-workflow.json": "eb36e8df7ee7429e32eb606aff226cf7ed93527810926b02f91a9a31995c36df",
+    "cleanup-result.json": "0d01def77717a848727141e0e2b930dfc20212a526fe88967e335712046935da"
+  }
+}

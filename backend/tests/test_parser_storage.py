@@ -77,8 +77,8 @@ def test_private_storage_atomic_immutable_and_bounded(tmp_path):
 def test_configuration_rejects_unimplemented_capabilities(monkeypatch):
     from documind.config import Settings
 
-    monkeypatch.setenv("GENERATION_ENABLED", "true")
-    with pytest.raises(ValueError, match="not implemented"):
+    monkeypatch.setenv("SELF_RAG_ENABLED", "true")
+    with pytest.raises(ValueError, match="Self-RAG"):
         Settings(
             _env_file=None,
             local_api_token="x" * 32,
@@ -113,3 +113,95 @@ def test_document_limits_and_parser_deadline(pdf):
         extract_pdf(pdf(), {**CONFIG, "max_rendered_bytes": 1}, 10)
     with pytest.raises(AppError, match="PARSER_TIMEOUT"):
         extract_pdf(pdf(), CONFIG, 0.001)
+
+
+def test_pdf_child_has_private_environment_and_resource_boundary(pdf, monkeypatch):
+    import sys
+
+    from documind import parser
+
+    launch = parser.subprocess.Popen
+    marker = "DOCUMIND_TEST_OPERATOR_SECRET"
+    monkeypatch.setenv(marker, "synthetic")
+    observed = []
+
+    def capture(args, **settings):
+        if args[:4] == [sys.executable, "-I", "-B", "-m"] and args[4] == "documind.parser":
+            observed.append(settings)
+        return launch(args, **settings)
+
+    monkeypatch.setattr(parser.subprocess, "Popen", capture)
+    assert extract_pdf(pdf(), CONFIG, 10)[0]["text_raw"]
+    assert len(observed) == 1
+    settings = observed[0]
+    assert marker not in settings["env"]
+    assert settings["env"]["HOME"] == settings["env"]["TMPDIR"] == str(settings["cwd"])
+    assert settings["start_new_session"] is True
+
+
+def test_pdf_sandbox_limits_file_and_network_access(tmp_path):
+    import json
+    import os
+    import socket
+    import subprocess
+    import sys
+
+    work = tmp_path / "input"
+    work.mkdir()
+    (work / "allowed").write_text("parser input")
+    outside = tmp_path / "unrelated"
+    outside.write_text("unrelated data")
+    source = """
+import json, resource, socket, sys
+from pathlib import Path
+from documind.parser_sandbox import restrict
+
+work, outside, port = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])
+restrict(work, {"max_rendered_bytes": 1_000_000})
+assert (work / "allowed").read_text() == "parser input"
+(work / "output").write_text("success")
+denied = []
+for operation in (outside.read_bytes, lambda: outside.write_text("refused"),
+                  lambda: socket.create_connection(("127.0.0.1", port), timeout=1)):
+    try:
+        result = operation()
+        if isinstance(result, socket.socket):
+            result.close()
+        denied.append(False)
+    except PermissionError:
+        denied.append(True)
+print(json.dumps({
+    "denied": denied,
+    "core_limit": resource.getrlimit(resource.RLIMIT_CORE)[0],
+    "memory_limit": resource.getrlimit(resource.RLIMIT_AS)[0],
+    "file_limit": resource.getrlimit(resource.RLIMIT_FSIZE)[0],
+}))
+"""
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-c",
+                source,
+                str(work.resolve()),
+                str(outside.resolve()),
+                str(listener.getsockname()[1]),
+            ],
+            cwd=work,
+            env={"PATH": "/usr/bin:/bin", "HOME": str(work), "TMPDIR": str(work)},
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+    result = json.loads(completed.stdout)
+    assert result["denied"] == [True, True, True]
+    assert result["core_limit"] == 0 and result["file_limit"] == 64 * 1024**2
+    if os.uname().sysname == "Linux":
+        assert 0 < result["memory_limit"] <= 1536 * 1024**2
+    assert (work / "output").read_text() == "success"
+    assert outside.read_text() == "unrelated data"

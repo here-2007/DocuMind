@@ -1,0 +1,113 @@
+{
+  "revision": "phase2-synthetic-held-out-v1",
+  "documents": [
+    {
+      "group": "HOLD-vendor-011",
+      "invoice": "HOLD-INV-011",
+      "text": "Invoice number: HOLD-INV-011\nGrand total: USD 2,221.00\nInvoice date: 2026-10-11\nDue date: 2026-11-11\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice HOLD-INV-011?",
+          "expected_quote": "Grand total: USD 2,221.00"
+        },
+        {
+          "question": "What is the invoice number on invoice HOLD-INV-011?",
+          "expected_quote": "Invoice number: HOLD-INV-011"
+        },
+        {
+          "question": "When was the invoice issued for invoice HOLD-INV-011?",
+          "expected_quote": "Invoice date: 2026-10-11"
+        },
+        {
+          "question": "When is payment due on invoice HOLD-INV-011?",
+          "expected_quote": "Due date: 2026-11-11"
+        },
+        {
+          "question": "What currency is used on invoice HOLD-INV-011?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "HOLD-vendor-012",
+      "invoice": "HOLD-INV-012",
+      "text": "Invoice number: HOLD-INV-012\nGrand total: USD 2,332.00\nInvoice date: 2026-10-12\nDue date: 2026-11-12\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice HOLD-INV-012?",
+          "expected_quote": "Grand total: USD 2,332.00"
+        },
+        {
+          "question": "What is the invoice number on invoice HOLD-INV-012?",
+          "expected_quote": "Invoice number: HOLD-INV-012"
+        },
+        {
+          "question": "When was the invoice issued for invoice HOLD-INV-012?",
+          "expected_quote": "Invoice date: 2026-10-12"
+        },
+        {
+          "question": "When is payment due on invoice HOLD-INV-012?",
+          "expected_quote": "Due date: 2026-11-12"
+        },
+        {
+          "question": "What currency is used on invoice HOLD-INV-012?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "HOLD-vendor-013",
+      "invoice": "HOLD-INV-013",
+      "text": "Invoice number: HOLD-INV-013\nGrand total: USD 2,443.00\nInvoice date: 2026-10-13\nDue date: 2026-11-13\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice HOLD-INV-013?",
+          "expected_quote": "Grand total: USD 2,443.00"
+        },
+        {
+          "question": "What is the invoice number on invoice HOLD-INV-013?",
+          "expected_quote": "Invoice number: HOLD-INV-013"
+        },
+        {
+          "question": "When was the invoice issued for invoice HOLD-INV-013?",
+          "expected_quote": "Invoice date: 2026-10-13"
+        },
+        {
+          "question": "When is payment due on invoice HOLD-INV-013?",
+          "expected_quote": "Due date: 2026-11-13"
+        },
+        {
+          "question": "What currency is used on invoice HOLD-INV-013?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "HOLD-vendor-014",
+      "invoice": "HOLD-INV-014",
+      "text": "Invoice number: HOLD-INV-014\nGrand total: USD 2,554.00\nInvoice date: 2026-10-14\nDue date: 2026-11-14\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice HOLD-INV-014?",
+          "expected_quote": "Grand total: USD 2,554.00"
+        },
+        {
+          "question": "What is the invoice number on invoice HOLD-INV-014?",
+          "expected_quote": "Invoice number: HOLD-INV-014"
+        },
+        {
+          "question": "When was the invoice issued for invoice HOLD-INV-014?",
+          "expected_quote": "Invoice date: 2026-10-14"
+        },
+        {
+          "question": "When is payment due on invoice HOLD-INV-014?",
+          "expected_quote": "Due date: 2026-11-14"
+        },
+        {
+          "question": "What currency is used on invoice HOLD-INV-014?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    }
+  ]
+}

@@ -46,6 +46,7 @@ def reviewed_pages(repo, job, config):
                 "review_version": REVIEW_VERSION,
             }
             item = {
+                "source_order": row["reading_order"],
                 "text_raw": text,
                 "bbox_norm": row["bbox_norm"],
                 "confidence": None if change else row["confidence"],
@@ -68,6 +69,7 @@ def reviewed_pages(repo, job, config):
             headers = [cell["text_raw"] for cell in cells if cell["is_header"]]
             tables.append(
                 {
+                    "source_order": row["reading_order"],
                     "box": row["bbox_norm"],
                     "cells": cells,
                     "rows": row["metadata_json"]["row_count"],
@@ -82,7 +84,7 @@ def reviewed_pages(repo, job, config):
                     },
                 }
             )
-        raw, elements = _canonical(blocks, tables)
+        raw, elements = _canonical(blocks, tables, preserve_order=True)
         if not raw.strip():
             raise AppError("EMPTY_REVIEW_SOURCE", 422)
         total_chars += len(raw)
@@ -101,9 +103,7 @@ def reviewed_pages(repo, job, config):
                     "base_ingestion_version": base,
                     "original_warnings": page["metadata_json"].get("warnings", []),
                 },
-                "image": repo.objects.get(
-                    page["render_object_key"], repo.cfg.max_page_pixels * 4 + 1000000
-                ),
+                "image": repo.objects.read_preview(page),
             }
         )
         output.append(result)

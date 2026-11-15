@@ -1,6 +1,6 @@
 # Evidence and deterministic comparison contract
 
-This contract owns claim verification and comparison semantics. It is a design, not an implemented verifier or a claim of perfect semantic entailment. Lifecycle/enumeration ownership remains in [DATA_MODEL.md](DATA_MODEL.md); requirements below apply to baseline, comparison and trained Self-RAG equally.
+This contract owns claim verification and comparison semantics. Phase 2 implements the bounded evidence-v1 verifier. Phase 4 implements the first comparison rule below. [DATA_MODEL.md](DATA_MODEL.md) owns lifecycle and stored values.
 
 ## 1. Three independent checks
 
@@ -31,14 +31,28 @@ Irrelevant hits and missing facts are handled even when top-k is full. Ranking s
 
 ## 4. First comparison rule: `grand_total_match_v1`
 
-Scope: one invoice and one purchase order, with exact explicit PO reference and matching explicit vendor identifier; both source documents are selected and authorized. Missing/duplicate identifiers or multiple candidate POs produce `UNVERIFIED_MATCH` and `needs_review`. Name similarity alone is not a match. Normalize identifier whitespace/Unicode conservatively; do not erase punctuation or leading zeros.
+The workspace accepts two or three distinct authorized PDFs and pins their preview versions. A verified result requires exactly one invoice and one purchase order. Missing or duplicate identifiers and competing candidates produce `UNVERIFIED_MATCH` and `needs_review`. Match PO and vendor identifiers case-sensitively after trimming and Unicode normalization, preserving punctuation and leading zeros.
 
-Both explicitly labeled grand totals must have verified source spans, identical known ISO currency, the same explicitly established total basis (for example tax-inclusive), and no unresolved amendments, credits or conflicting values. Missing basis/currency or ambiguous extraction produces `needs_review`, without asserting an amount mismatch. The initial synthetic fixtures explicitly state their common basis and currency.
+The parser reads bounded English labels on individual lines of complete paragraph elements. Use `Document type: Invoice` or `Document type: Purchase order`, `PO reference` or `PO number`, `Vendor ID`, `Grand total: INR 1,100.00` and `Grand total basis: tax-inclusive`. An explicit supported currency may also appear on a separate `Currency` line. Both totals need the same explicit currency and basis, with exact spans. Unreviewed sources, competing values, unsupported formats and recognized amendment or credit indicators produce a needs-review outcome. The total-specific outcome is `UNVERIFIED_TOTAL`.
 
-Parse decimal strings directly into `Decimal`, require finite values representable in `numeric(20,6)`, and compute `difference = invoice_total - purchase_order_total` without intermediate rounding. V1 uses exact equality (tolerance `0`); display formatting must not alter stored inputs/result. Persist original values, normalized inputs, basis, operation, rule version, linkage method and both evidence anchors. Difference zero gives a verified match; otherwise `AMOUNT_MISMATCH`. Test negative values and precision overflow explicitly. No currency conversion, inferred tax adjustment or amendment precedence exists in v1.
+A recognized comparison label in a table cell makes the investigation require review, including in a manually reviewed extraction. The paragraph-only rule cannot resolve table layout or competing values there. Earlier findings, their evidence links and their report creation, metadata and download routes return `INVESTIGATION_RECHECK_REQUIRED` for affected sources.
 
-Structured retrieval of these records and source elements is mandatory and logged even when no dense search is necessary. Findings/reports use `mode=deterministic_comparison`; an LLM explanation cannot change the calculated values. Contract terms, line items, taxes, fuzzy matching and amendments are later versioned rules with independent fixtures; the first product release does not claim to validate them.
+Parse decimal strings directly into `Decimal`. Inputs must be finite and fit `numeric(20,6)`. Compute `difference = invoice_total - purchase_order_total` without intermediate rounding and store it as `numeric(21,6)`. Zero gives `AMOUNT_MATCH`. A nonzero value gives `AMOUNT_MISMATCH`. Preserve typed inputs and exact raw anchors for the amounts, IDs, currency and basis. The finding and CSV expose the operation, tolerance, rule version, linkage method and both grand-total anchors. The rule supports negative values and up to six fractional digits.
+
+The worker retrieves typed records and exact source spans through scoped PostgreSQL reads and logs structured completion. Result and CSV reads recheck field support and arithmetic independently. Findings and reports use `mode=deterministic_comparison`. Contract terms, line items, conversion, tax recomputation, fuzzy matching and amendment precedence need later versioned rules and fixtures.
 
 ## 5. Gates
 
 Before baseline QA: tests reject a real quote attached to an unsupported approval claim, wrong field, wrong document, unauthorized source and a nonempty irrelevant result set. Before comparison: tests cover equal/unequal totals, missing currency/basis, ambiguous matches, low-confidence OCR, exact decimals and report equality. See [TESTING.md](TESTING.md) scenarios H and K. These are required tests to implement, not passed results.
+
+## Implemented Phase 2 rules
+
+The `evidence-v1.3` verifier matches a bounded question grammar for explicit invoice and purchase order identifiers, invoice and due dates, currency, grand total and amount due. An explicit invoice identifier must resolve to one labeled invoice in the pinned scope. A question without an identifier needs a single selected document. Multiple invoice identities on that source block verification. Totals use explicit supported ISO currencies and bounded Decimal parsing. Dates must be valid ISO dates. Retain recognized field labels with unparsed values as uncertainty, including competing amounts in an unsupported number format. Conflicting values, incomplete table context, an unsupported question, or a field missing from the retrieved raw spans yields abstention.
+
+A recognized QA field label in a table cell on the resolved document returns `unsupported_table_fields`, even after extraction review. Labels and values may occupy different cells, so a label without an inline value also blocks paragraph-only verification. The guard covers invoice identity and currency qualifiers as well as amounts and dates. Baseline and Self-RAG use the same check against complete pinned source elements, including content outside a model's evidence window. Unrelated documents outside the resolved claim do not block it.
+
+Version 1.3 additionally accepts the exact bounded form `For invoice <identifier>, give the total.`, and its `currency`/`due date` variants. Match the whole question and resolve the same explicit invoice identity; appended instructions or additional identifiers do not broaden the grammar. This aligns the frozen v3 paraphrases with the application verifier without changing labels, corpus or model weights.
+
+Stored answers, event reads and citation reads recheck support against those pinned sources. A previously supported answer that fails the current verifier returns `409 QUERY_RECHECK_REQUIRED`; start a fresh query to obtain the current abstention. Its historical result is retained privately rather than silently rewritten.
+
+A supported answer returns the verified field line. The selected chat endpoint can see the question and that verified excerpt. Its candidate is accepted only if it matches the independently verified line. The result records candidate acceptance and whether generation was used. A different candidate leaves the verified line in the answer. Transport failures and identity changes produce terminal errors. Query and citation records retain the exact Unicode span and verifier version.

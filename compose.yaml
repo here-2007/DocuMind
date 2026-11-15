@@ -25,6 +25,9 @@ services:
       retries: 30
   qdrant:
     image: qdrant/qdrant:v1.13.4
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?Run scripts/init_local.py --secure-qdrant}
+      QDRANT__SERVICE__ENABLE_CORS: "false"
     ports: ["127.0.0.1:56333:6333"]
     volumes: ["qdrant:/qdrant/storage"]
   migrate:

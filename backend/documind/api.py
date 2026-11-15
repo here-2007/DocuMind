@@ -18,7 +18,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from documind.config import settings
-from documind.db import engine
+from documind.db import engine, require_current_schema
 from documind.errors import AppError
 from documind.repository import Repository
 from documind.storage import store
@@ -39,13 +39,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title="DocuMind native PDF preview",
+    title="DocuMind document intelligence",
     version="0.1.0",
     dependencies=[Depends(HTTPBearer(auto_error=False))],
 )
 
 
 def repository() -> Repository:
+    require_current_schema(engine())
     return Repository(engine(), store(), settings())
 
 
@@ -56,7 +57,11 @@ def error_payload(code, request_id):
     return {
         "error": {
             "code": code,
-            "message": code.replace("_", " ").capitalize(),
+            "message": (
+                "Run uv run --no-sync alembic upgrade head, then restart the app."
+                if code == "DATABASE_MIGRATION_REQUIRED"
+                else code.replace("_", " ").capitalize()
+            ),
             "request_id": request_id,
             "details": {},
         }
@@ -82,7 +87,25 @@ async def boundary(request: Request, call_next):
                 raise AppError("UNAUTHENTICATED", 401)
         if request.method in {"POST", "PUT", "PATCH"}:
             # Bound the actual body, including chunked requests, before multipart parsing.
-            limit = settings().max_upload_bytes + 65536
+            upload_limit = settings().max_upload_bytes
+            parts = request.url.path.rstrip("/").split("/")
+            if (
+                request.method == "POST"
+                and len(parts) == 6
+                and parts[:4] == ["", "api", "v1", "workspaces"]
+                and parts[5] == "documents"
+                and (key := request.headers.get("idempotency-key")) is not None
+            ):
+                try:
+                    workspace_id = UUID(parts[4])
+                except ValueError:
+                    workspace_id = None  # FastAPI will validate the route parameter.
+                if workspace_id is not None:
+                    upload_limit = await run_in_threadpool(
+                        repository().upload_limit, workspace_id, request_key(key)
+                    )
+            request.state.upload_limit = upload_limit
+            limit = upload_limit + 65536
             data = bytearray()
             async for chunk in request.stream():
                 if len(data) + len(chunk) > limit:
@@ -134,14 +157,17 @@ def health():
 
 @app.get("/api/v1/ready")
 def ready():
-    database = objects = broker = False
+    schema_current = workspace_initialized = objects = broker = False
+    schema_error = None
     ocr = False
     try:
-        with engine().connect() as c:
-            c.execute(sa.text("SELECT 1 FROM workspaces LIMIT 1"))
-        database = True
+        require_current_schema(engine())
+        schema_current = True
+        workspace_initialized = repository().workspace_exists()
+    except AppError as exc:
+        schema_error = exc.code
     except Exception:
-        pass
+        schema_error = "DATABASE_UNAVAILABLE"
     try:
         store().initialize()
         objects = store().root.is_dir()
@@ -163,17 +189,72 @@ def ready():
             ocr = True
         except Exception:
             pass
-    native = database and objects and broker and (not settings().ocr_enabled or ocr)
+    native = workspace_initialized and objects and broker and (not settings().ocr_enabled or ocr)
+    search = generation = False
+    cfg = settings()
+    if workspace_initialized and cfg.indexing_enabled:
+        try:
+            from documind.publications import active_id, checked_artifacts, publication
+            from documind.search_models import retrieval_identity, search_artifacts_ready
+
+            artifacts_ready = search_artifacts_ready()
+            with engine().connect() as c:
+                workspace = cfg.local_workspace_id
+                identifier = active_id(c, workspace)
+                item = publication(c, workspace, identifier) if identifier else None
+            if item and artifacts_ready:
+                checked_artifacts(repository(), item, retrieval_identity())
+                with engine().connect() as c:
+                    search = active_id(c, workspace) == identifier
+        except Exception:
+            search = False
+    if workspace_initialized and cfg.generation_enabled:
+        try:
+            from documind import schema as t
+            from documind.connections import secret_box
+
+            secret_box(cfg)
+            with engine().connect() as c:
+                generation = bool(
+                    c.scalar(
+                        sa.select(t.connections.c.id)
+                        .where(
+                            t.connections.c.workspace_id == cfg.local_workspace_id,
+                            t.connections.c.owner_principal_id == cfg.local_workspace_id,
+                            t.connections.c.status == "ready",
+                        )
+                        .limit(1)
+                    )
+                )
+        except Exception:
+            generation = False
+    trained = False
+    split = False
+    if workspace_initialized and broker and cfg.self_rag_enabled:
+        from documind.runtime_client import admitted
+
+        try:
+            cap = admitted(cfg)
+            trained = True
+            split = cap.candidate_scoring
+        except AppError:
+            pass
     return JSONResponse(
         {
+            "database_schema_current": schema_current,
+            "error": error_payload(schema_error, None)["error"] if schema_error else None,
             "native_ingestion": native,
-            "source_reads": database and objects,
+            "source_reads": workspace_initialized and objects,
+            "workspace_initialized": workspace_initialized,
             "ocr": ocr,
             "tables": native and settings().tables_enabled,
-            "review": database and objects,
-            "search": False,
-            "generation": False,
-            "self_rag": False,
+            "review": workspace_initialized and objects,
+            "search": search,
+            "generation": generation,
+            "self_rag": trained,
+            "split_reflection": split,
+            "app_location": "local",
+            "reflection_location": cfg.reflection_location,
             "managed_kaggle": False,
         },
         status_code=200 if native else 503,
@@ -182,6 +263,8 @@ def ready():
 
 @app.get("/api/v1/workspaces")
 def workspaces(repo: Repo):
+    if not repo.workspace_exists():
+        raise AppError("WORKSPACE_NOT_INITIALIZED", 503)
     return {
         "items": [{"id": str(settings().local_workspace_id), "name": "Local workspace"}],
         "next_cursor": None,
@@ -215,15 +298,17 @@ def request_key(value):
 @app.post("/api/v1/workspaces/{workspace_id}/documents", status_code=202)
 async def upload(
     workspace_id: UUID,
+    request: Request,
     repo: Repo,
     file: Annotated[UploadFile, File()],
     idempotency_key: Annotated[str, Header()],
 ):
     repo.authorize(workspace_id)
     key = request_key(idempotency_key)
-    data = await file.read(settings().max_upload_bytes + 1)
+    limit = request.state.upload_limit
+    data = await file.read(limit + 1)
     await file.close()
-    if len(data) > settings().max_upload_bytes:
+    if len(data) > limit:
         raise AppError("FILE_TOO_LARGE", 413)
     filename = (file.filename or "document.pdf").replace("\\", "/").split("/")[-1]
     if not filename.lower().endswith(".pdf") or len(filename) > 255:
@@ -249,6 +334,28 @@ def document(workspace_id: UUID, document_id: UUID, repo: Repo):
 @app.get("/api/v1/workspaces/{workspace_id}/jobs/{job_id}")
 def job(workspace_id: UUID, job_id: UUID, repo: Repo):
     return repo.job(workspace_id, job_id)
+
+
+@app.get("/api/v1/workspaces/{workspace_id}/cleanup-jobs")
+def cleanup_jobs(
+    workspace_id: UUID,
+    repo: Repo,
+    limit: int = Query(50, ge=1, le=200),
+    after: str | None = Query(None, alias="cursor"),
+):
+    from documind.schema import jobs
+
+    repo.authorize(workspace_id)
+    statement = sa.select(jobs.c.id, jobs.c.status, jobs.c.error_code).where(
+        jobs.c.workspace_id == workspace_id,
+        jobs.c.kind == "delete",
+        jobs.c.status.in_(("queued", "running", "failed")),
+    )
+    if after is not None:
+        statement = statement.where(jobs.c.id > cursor(after))
+    with repo.engine.connect() as c:
+        rows = c.execute(statement.order_by(jobs.c.id).limit(limit + 1)).mappings().all()
+    return envelope(rows[:limit], len(rows) > limit, key="id")
 
 
 @app.post("/api/v1/workspaces/{workspace_id}/jobs/{job_id}/retry", status_code=202)
@@ -309,7 +416,14 @@ def page(
     if not rows:
         raise AppError("NOT_FOUND", 404)
     result = rows[0]
-    result.pop("render_object_key")
+    try:
+        observed_size = repo.objects.source_size(result.pop("render_object_key"))
+        if result["render_size_bytes"] not in (None, observed_size):
+            raise AppError("SOURCE_HASH_MISMATCH", 503)
+    finally:
+        repo.summary(workspace_id, document_id)
+    result.pop("render_size_bytes")
+    result.pop("render_sha256")
     result["image_url"] = (
         f"/api/v1/workspaces/{workspace_id}/documents/{document_id}/pages/"
         f"{page_number}/image?ingestion_version={result['ingestion_version']}"
@@ -328,24 +442,16 @@ def image(
     rows = repo.source(workspace_id, document_id, ingestion_version, page_number)
     if not rows:
         raise AppError("NOT_FOUND", 404)
-    data = store().get(rows[0]["render_object_key"], settings().max_page_pixels * 4 + 1000000)
-    repo.summary(workspace_id, document_id)
+    try:
+        data = repo.objects.read_preview(rows[0])
+    finally:
+        repo.summary(workspace_id, document_id)
     return Response(data, media_type="image/png")
 
 
 @app.get("/api/v1/workspaces/{workspace_id}/documents/{document_id}/original")
 def original(workspace_id: UUID, document_id: UUID, repo: Repo):
-    repo.summary(workspace_id, document_id)
-    from documind import schema as t
-
-    with engine().connect() as c:
-        key = c.execute(
-            sa.select(t.documents.c.object_key).where(
-                t.documents.c.workspace_id == workspace_id, t.documents.c.id == document_id
-            )
-        ).scalar_one()
-    data = store().get(key, settings().max_upload_bytes)
-    repo.summary(workspace_id, document_id)
+    data = repo.original(workspace_id, document_id)
     return Response(
         data,
         media_type="application/pdf",
@@ -377,3 +483,14 @@ def elements(
         row["element_id"] = row["id"]
         row["text"] = row["text_raw"]
     return envelope(rows, overflow, key="id")
+
+
+def register_phase2():
+    from documind.investigation_api import router as investigations
+    from documind.phase2_api import router
+
+    app.include_router(router)
+    app.include_router(investigations)
+
+
+register_phase2()

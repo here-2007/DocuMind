@@ -1,0 +1,187 @@
+{
+  "recorded_at": "2026-11-15T19:58:51.560574+00:00",
+  "scope": "Fix and verify findings 1\u20137 of the November 16 deep audit. Findings 8\u201315 remain open.",
+  "git_head": "a7a9a7b7db59d922ae036c6cc270b0039c5dad51",
+  "publication": "Local working tree only. No commit, push or remote CI run in this task.",
+  "findings": [
+    {
+      "id": 1,
+      "status": "fixed_and_verified",
+      "change": "Require a generated server/client Qdrant key, disable CORS and preserve loopback binding. Fresh and existing configuration paths agree.",
+      "regressions": [
+        "backend/tests/test_phase2.py::test_qdrant_requires_key_and_does_not_allow_browser_origins",
+        "backend/tests/test_local_setup.py::test_init_generates_key_and_upgrade_preserves_existing_configuration",
+        "backend/tests/test_local_setup.py::test_indexing_requires_a_private_qdrant_key"
+      ]
+    },
+    {
+      "id": 2,
+      "status": "fixed_and_verified",
+      "change": "Serialize page writes and physical cleanup with the same nonblocking document advisory lock. Check the ingest lease inside the lock and retain final SQL fencing.",
+      "regressions": [
+        "backend/tests/test_ingestion.py::test_cleanup_cannot_finish_between_heartbeat_and_page_write",
+        "backend/tests/test_ingestion.py::test_deletion_wins_and_cleanup_is_idempotent"
+      ]
+    },
+    {
+      "id": 3,
+      "status": "fixed_and_verified",
+      "change": "Persist each new call deadline for exact replay. Shared runtime transport attempts exact-step cancellation on timeout or invalid response and preserves the original failure if cancellation fails.",
+      "regressions": [
+        "backend/tests/test_reflection_runtime.py::test_transport_timeout_cancels_active_step_and_releases_runtime",
+        "backend/tests/test_reflection_runtime.py::test_runtime_transport_cancels_failures_without_masking_original",
+        "backend/tests/test_reflection_runtime.py::test_real_worker_exit_replays_confirmed_steps_only"
+      ],
+      "evidence_limit": "The timeout/cancellation test uses real HTTP with an explicitly scripted decoder. The full suite separately reloads and serves the trained CPU pilot. No new selected Qwen GPU/MPS quality run."
+    },
+    {
+      "id": 4,
+      "status": "fixed_and_verified",
+      "change": "Kill the owned process group and reap the direct child in every guardian exit path, including parent success and nonzero exit.",
+      "regressions": [
+        "backend/tests/test_runtime_lifetime.py::test_early_parent_exit_also_kills_descendants",
+        "backend/tests/test_runtime_lifetime.py::test_detached_guardian_kills_startup_and_descendants_after_launcher_dies"
+      ]
+    },
+    {
+      "id": 5,
+      "status": "fixed_and_verified",
+      "change": "Compare installed Alembic revisions with source migration heads. Readiness and repository-backed HTTP routes return an actionable DATABASE_MIGRATION_REQUIRED 503 on mismatch. No automatic migrations.",
+      "regressions": [
+        "backend/tests/test_ingestion.py::test_stale_schema_rejects_readiness_and_operations",
+        "backend/tests/test_ingestion.py::test_migration_roundtrip"
+      ]
+    },
+    {
+      "id": 6,
+      "status": "fixed_and_verified",
+      "change": "Remove blocking index lock acquisition. Cleanup returns PUBLICATION_BUSY to the existing bounded retry policy and succeeds after the holder releases its lock.",
+      "regressions": [
+        "backend/tests/test_phase2.py::test_cleanup_retries_index_contention_without_waiting_for_lease"
+      ]
+    },
+    {
+      "id": 7,
+      "status": "fixed_and_verified",
+      "change": "Retain the immutable create/edit payload, key and expected version in transient memory. Recover unknown receipts without duplicates, including authentication rejection during recovery. Freeze destination edits and clear credentials from the visible input.",
+      "regressions": [
+        "frontend/tests/workspace.spec.ts::uploads, publishes, replays trace, and opens the cited PDF page",
+        "backend/tests/test_phase3_browser.py::test_next_workspace_in_browser[workspace]"
+      ],
+      "evidence_limit": "Reload discards transient credentials and submission state. Inspect saved connections before starting a new save after leaving the page."
+    }
+  ],
+  "verification": {
+    "verdict": "PASS",
+    "full_suite": {
+      "tests": 310,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "dependency_warnings": 5,
+      "seconds": 178.227,
+      "junit": "full-suite-final.xml"
+    },
+    "flags": {
+      "HF_HUB_OFFLINE": "1",
+      "SELF_RAG_ENABLED": "false",
+      "DOCUMIND_TEST_OCR_ROOT": ".data/models/ocr",
+      "DOCUMIND_TEST_RETRIEVAL": "1",
+      "DOCUMIND_TEST_CHAT_MODEL": "1",
+      "DOCUMIND_TEST_EVAL": "1",
+      "DOCUMIND_TEST_BROWSER": "1",
+      "DOCUMIND_TEST_REFLECTION_BUNDLE": ".data/phase5-recheck-cpu",
+      "DOCUMIND_REQUIRE_REFLECTION_BUNDLE": "1"
+    },
+    "ruff": "passed: uv run --no-sync ruff check backend scripts migrations",
+    "frontend_typecheck": "passed: npm run typecheck",
+    "frontend_build": "passed: npm run build",
+    "lockfile": "passed: uv lock --check --offline",
+    "whitespace": "passed: git diff --check",
+    "schema_consistency": "passed in disposable test_migration_roundtrip, including Alembic check",
+    "browser": "Both isolated Chromium harness modes passed in the final suite. Separate focused browser rerun also passed.",
+    "native_compose": {
+      "init": 0,
+      "compose": 0,
+      "health": 0,
+      "smoke": 0,
+      "cleanup": 0
+    },
+    "native_source_binding": "native-clean/native-result.json retains its exact earlier source snapshot; native ingestion/locking/API behavior is unchanged in the final suite. Model transport and browser final changes are covered by full-suite-final.xml.",
+    "earlier_attempt": "Retained full-suite.log records 306 passes and one browser failure against an earlier production bundle. Rebuild and final full suite passed 310/310 after recovery handling and shared transport regressions were complete.",
+    "environment": {
+      "python": "3.12.13",
+      "system": "Darwin",
+      "machine": "arm64"
+    },
+    "documentation": "Passed source/artifact SHA-256 bindings, seven finding mappings, regression symbol references and 181 local documentation links."
+  },
+  "installation_actions": {
+    "private_env": "Appended only a missing QDRANT_API_KEY using init_local.py --secure-qdrant. No credential printed.",
+    "qdrant": "Recreated only the Qdrant service with its existing volume; authenticated collection inventory matched the pre-change inventory.",
+    "persistent_database_revision": "0009_split_reflection",
+    "persistent_database_modified": false,
+    "persistent_database_admission": {
+      "status": 503,
+      "code": "DATABASE_MIGRATION_REQUIRED"
+    },
+    "required_host_setup": "Run uv run --no-sync alembic upgrade head against the paired database before starting this updated host installation.",
+    "disposable_resources": "Fresh native Compose project containers, volumes and image removed. Existing PostgreSQL, Redis and Qdrant remain running."
+  },
+  "unrun": [
+    "Selected Qwen GPU/MPS quality inference",
+    "Retraining",
+    "Provider cleanup reconciliation",
+    "Remote CI",
+    "Findings 8\u201315 remediation"
+  ],
+  "private_evidence_directory": ".data/audit-fixes-1-7-2026-11-16",
+  "artifact_sha256": {
+    "targeted-initial.log": "6004302e7941c43c8f4ce15a126ed50d2c470e032caa05abdfee8ee4293d8ff7",
+    "reflection-targeted.log": "a8b13a37459ced9bf601adf794f8154e4800b953d1f5cef7ee3afec584bf426b",
+    "browser-final.log": "9ffbc9799f0c533f4f7e33614145d66b651ec890ec4fefb6d21f3d036ef15575",
+    "full-suite.log": "3301e5ea9f2314987c231772c3abeff91ed4146802a838dd92a46a07b7030198",
+    "full-suite.xml": "c8e1e1fe6ec349527e92b0386bc4373578750005489f19760d2d3642c9ccfb3f",
+    "full-suite-final.log": "8a87bd6e029fb046de4d928254922f210a254ce810b4935dcfd54400c82c4d03",
+    "full-suite-final.xml": "9cf3e222b84c978eb924f955bfa1bc28c90a6c801b784cb37458cff0a4ee4ed9",
+    "frontend-build.log": "bc66a9a20f8aebf6ad6ac9ff4575cccc94c180a621af3e3d7ed56373494dd5d5",
+    "native-acceptance.log": "6740bc7ad075d524b4cf114e61f286fbb91da067f5596fad21624ee92b8dbce2",
+    "native-clean/native-result.json": "9c3e914ab242baac6ce9dd5c6b876b91708409456fc611c7accf9c8b7096a3a3",
+    "native-clean/native-compose.log": "271c90a74d48b7a47c98179473e1f9b251d9da029833726ad37f45b741bfde69",
+    "native-clean/native_check.py": "5a7ed926ed7a2601ddd48e558ac082ae4474063020867ea33951339e59d4abec",
+    "qdrant-before.json": "c95da87acbdd4ff5c14f39e8191b89acf02af7f714978faec4c3c4ded3efc1fe"
+  },
+  "source_sha256": {
+    "compose.yaml": "c9998dec3a3e7775a3452d1b5ec712318646cf8791f63c7f7ac323402bc6431c",
+    ".env.example": "8ef6a8cae30b0cfaae97250543cce09089b923db5992ec630962088abbe9a5eb",
+    "scripts/init_local.py": "260b69b18f66d2fae962b56c8dad3dc5ac7d11259adac9c418f3f191a5a9a71e",
+    "backend/documind/config.py": "be87fd3ce01b268967b3594675719f5d4d9b38ec80991c57c1e61af51d2ead85",
+    "backend/documind/db.py": "73ad87f7d478ce9b0b5ce0cd9d4ecdea543099ff9a0435e0edf2e2aab834a72a",
+    "backend/documind/api.py": "ab766fb0d43530d2e867c84b117d17338bd4622cf97f52371fcb5c974d2b5eb6",
+    "backend/documind/repository.py": "77287962e017e37c771b64c298eabf3cd76de72ab6a108ec4f0494611b772d64",
+    "backend/documind/publications.py": "e212b24526a35ac458b05a4442157d575ff925e9e21bd625448b8eb34f1fe005",
+    "backend/documind/reflection_queries.py": "8088d6692e059c8212fcb4a42a4c6055cbfc6c8dd8eadc2d9943d437c1daa1d7",
+    "backend/documind/runtime_client.py": "00643bda99d2ad4d4dce3a30617f8fdea6b7ef8ec7aa257e0ed9ef23c96076d4",
+    "backend/documind/runtime_lifetime.py": "e72af014a05c4a9c3c7626da8a689d39f3e668fe30fb387b1d7425aa7d0b2020",
+    "backend/tests/test_local_setup.py": "b62a9369d0d266b820e2ba7f30235c85ff5e4c44ac6d37ec86fa5587fdb4f0fb",
+    "backend/tests/test_ingestion.py": "1abd749be6e63a6fa76d443bc7f34c9b28431e5fb6242102d5f7b5e4579a5943",
+    "backend/tests/test_phase2.py": "cf274abde3c509669a2b5c2773eac4bc2e2715e0285dd2ac538ed934c42b6d05",
+    "backend/tests/test_reflection_runtime.py": "5b0c9edf873842a5cfe74b5623d2b22abc0c51fb7bc05ee7dd0312ae56b47f80",
+    "backend/tests/test_runtime_lifetime.py": "55c9a7d01b921b006d348bc5d399bea5d71028939b64c1cc792e26f48dac1784",
+    "frontend/components/connections.tsx": "b84723ae97583872685651503bd444606f8d7cb2696a051ab45b5b2033142b55",
+    "frontend/lib/api.ts": "6997c7991427ef41ace85004821bf17594252a97734b04e03b26633f8e0d0092",
+    "frontend/tests/workspace.spec.ts": "0b2f8a98229d9ff73802581126fdf0364a631dacf37a888f8d3de4ae0b104b0f",
+    "frontend/app/globals.css": "e9b277c112bac668181ad50cd50d50bcaf2c92fd501ffbc30694f17f65a25741",
+    "AGENTS.md": "648f98c04ded70dc3b7bb1b61f42d7b5b496641681c690feb816116d24bf145a",
+    "MEMORY.md": "4a0f6e67745be2968ddcb6be7428ecfc1ad2624e3f4f42b2384fc112ba662f2a",
+    "PROGRESS.md": "7713c54521793cad2318fa1694e5f892ac58b0f5b08c0d746b6463beb4da3379",
+    "DECISIONS.md": "3cb25159bd3c67dd6d0f3c85829f2c58283d28c1c3822fb7c464a80873d9955d",
+    "ARCHITECTURE.md": "8cd60b7e81b747ef28b0e0ce77335e35723c84b47900c74acb0fe6f171924f93",
+    "docs/API_CONTRACT.md": "16b179d258c22e6048b4901be353ba496707948e151b9be300ca0a0ac60dec3a",
+    "docs/LOCAL_DEVELOPMENT.md": "92f57e1a61ffa0aa2842bf2789d66fa1e09fedf4583157e1d9463985f9fdeee9",
+    "docs/SECURITY.md": "25744a71bb0c0293e9997b5821cee81bf838b4e17c03e2ee6cbda0de1eac13e2",
+    "docs/INGESTION.md": "52136e5f9f80bc3a1e699071d965c7411cd97cf27dacf17723667d52098ba006",
+    "docs/INFERENCE.md": "01c89740e10bafa1a574a144ff5a1c88dd4aebe652e8dfbf552ba50f4b08584e",
+    "docs/validation/deep-audit-2026-11-16.md": "833b9cef40f8cb2f21a144d2e88f679269573e054cb621e7a9d1a66eecb252f0"
+  }
+}

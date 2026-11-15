@@ -23,36 +23,6 @@ CONFIG = {
 }
 
 
-@pytest.fixture
-def table_pdf():
-    def make(scanned=False, rotation=0):
-        with pymupdf.open() as doc:
-            page = doc.new_page(width=300, height=300)
-            for x in (30, 150, 270):
-                page.draw_line((x, 60), (x, 180))
-            for y in (60, 100, 140, 180):
-                page.draw_line((30, y), (270, y))
-            for x, y, text in (
-                (40, 85, "Item"),
-                (160, 85, "Amount"),
-                (40, 125, "Pens"),
-                (160, 125, "12.50"),
-                (40, 165, "Paper"),
-            ):
-                page.insert_text((x, y), text, fontsize=14)
-            if scanned:
-                png = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).tobytes("png")
-                with pymupdf.open() as scan:
-                    p = scan.new_page(width=300, height=300)
-                    p.insert_image(p.rect, stream=png)
-                    p.set_rotation(rotation)
-                    return scan.tobytes()
-            page.set_rotation(rotation)
-            return doc.tobytes()
-
-    return make
-
-
 def assert_table(page, source):
     tables = [e for e in page["elements"] if e["element_type"] == "table"]
     cells = [e for e in page["elements"] if e["element_type"] == "table_cell"]
@@ -155,6 +125,14 @@ def test_review_creates_immutable_version_and_preserves_old_sources(client, repo
     assert client.get(path + "/pages/1").status_code == 410
     with repo.engine.connect() as c:
         assert c.execute(sa.select(sa.func.count()).select_from(t.elements)).scalar_one() == 0
+        assert (
+            c.scalar(
+                sa.select(t.versions.c.config_json).where(
+                    t.versions.c.ingestion_version == result["latest_ingestion_version"],
+                )
+            )
+            == {}
+        )
 
 
 @pytest.fixture
@@ -330,3 +308,126 @@ def test_missing_ocr_artifacts_fail_explicitly(client, repo, monkeypatch, tmp_pa
             connection.execute(sa.select(sa.func.count()).select_from(t.documents)).scalar_one()
             == 0
         )
+
+
+def test_words_on_both_sides_of_native_table_survive():
+    with pymupdf.open() as doc:
+        page = doc.new_page(width=500, height=400)
+        for x in (150, 250, 350):
+            page.draw_line((x, 100), (x, 220))
+        for y in (100, 140, 180, 220):
+            page.draw_line((150, y), (350, y))
+        page.insert_text(
+            (10, 125),
+            "LEFT                   HEADER                                  RIGHT",
+            fontname="cour",
+            fontsize=10,
+        )
+        for x, y, text in ((260, 125, "Amount"), (160, 165, "Pens"), (260, 165, "12.50")):
+            page.insert_text((x, y), text)
+        data = doc.tobytes()
+    page = extract_pdf(data, CONFIG, 15)[0]
+    outside = [
+        item["text_raw"].strip() for item in page["elements"] if item["element_type"] == "paragraph"
+    ]
+    assert outside == ["LEFT", "RIGHT"]
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+def test_approval_preserves_reading_order(client, repo, rotation):
+    from documind.worker import process_job
+
+    with pymupdf.open() as doc:
+        page = doc.new_page(width=300, height=400)
+        page.insert_text((40, 60), "First paragraph")
+        page.insert_text((40, 180), "Second paragraph")
+        page.set_rotation(rotation)
+        data = doc.tobytes()
+    workspace = repo.cfg.local_workspace_id
+    row = repo.upload(workspace, data, "order.pdf", "order")
+    process_job(row["job_id"])
+    path = f"/api/v1/workspaces/{workspace}/documents/{row['document_id']}"
+    before = client.get(path + "/pages/1").json()["text_raw"]
+    response = client.post(
+        path + "/review",
+        json={"base_ingestion_version": row["latest_ingestion_version"], "confirm_all_pages": True},
+        headers={"Idempotency-Key": "approve"},
+    )
+    assert response.status_code == 202
+    process_job(UUID(response.json()["job_id"]))
+    assert client.get(path + "/pages/1").json()["text_raw"] == before
+
+
+def test_reuse_completed_review_updates_preview(client, repo, table_pdf):
+    from documind.worker import process_job
+
+    workspace = repo.cfg.local_workspace_id
+    row = repo.upload(workspace, table_pdf(), "review.pdf", "source")
+    process_job(row["job_id"])
+    path = f"/api/v1/workspaces/{workspace}/documents/{row['document_id']}"
+    base = {"base_ingestion_version": row["latest_ingestion_version"], "confirm_all_pages": True}
+    cells = client.get(path + "/elements", params={"element_type": "table_cell"}).json()["items"]
+    cell = next(e for e in cells if e["text_raw"] == "12.50")
+
+    def submit(body, key):
+        response = client.post(path + "/review", json=body, headers={"Idempotency-Key": key})
+        assert response.status_code == 202
+        return response.json()
+
+    first = submit(base, "first")
+    process_job(UUID(first["job_id"]))
+    second = submit(
+        {**base, "corrections": [{"element_id": cell["id"], "text_raw": "13.50"}]}, "second"
+    )
+    process_job(UUID(second["job_id"]))
+    assert "13.50" in client.get(path + "/pages/1").json()["text_raw"]
+    reused = submit(base, "new-key")
+    assert reused["job_id"] == first["job_id"]
+    assert reused["preview_ingestion_version"] == reused["latest_ingestion_version"]
+    assert "12.50" in client.get(path + "/pages/1").json()["text_raw"]
+
+
+@pytest.mark.ocr
+def test_upload_replay_survives_missing_ocr(client, repo, pdf, ocr_config, tmp_path, monkeypatch):
+    monkeypatch.setattr(repo.cfg, "ocr_enabled", True)
+    monkeypatch.setattr(repo.cfg, "ocr_model_root", Path(ocr_config["ocr_model_root"]))
+    path = f"/api/v1/workspaces/{repo.cfg.local_workspace_id}/documents"
+
+    def submit(data, key):
+        return client.post(
+            path, files={"file": ("source.pdf", data)}, headers={"Idempotency-Key": key}
+        )
+
+    data = pdf()
+    first = submit(data, "accepted")
+    assert first.status_code == 202
+    monkeypatch.setattr(repo.cfg, "ocr_model_root", tmp_path / "missing")
+    replay = submit(data, "accepted")
+    assert replay.status_code == 202
+    assert replay.json()["job_id"] == first.json()["job_id"]
+    assert submit(pdf("Different content"), "accepted").status_code == 409
+    assert submit(data, "new-key").status_code == 503
+
+
+@pytest.mark.ocr
+@pytest.mark.parametrize(("rows", "columns"), [(1, 2), (2, 1), (2, 2)])
+def test_raster_grid_dimensions_and_unique_boundary_assignment(ocr_config, tmp_path, rows, columns):
+    import cv2
+    import numpy as np
+    from documind.tables import raster_tables
+
+    image = np.full((600, 600), 255, dtype=np.uint8)
+    for x in np.linspace(60, 540, columns + 1, dtype=int):
+        cv2.line(image, (int(x), 60), (int(x), 540), 0, 2)
+    for y in np.linspace(60, 540, rows + 1, dtype=int):
+        cv2.line(image, (60, int(y)), (540, int(y)), 0, 2)
+    path = tmp_path / "grid.png"
+    assert cv2.imwrite(str(path), image)
+    line = {"text_raw": "ON DIVIDER", "confidence": 0.9, "bbox_norm": [1 / 3, 0.2, 2 / 3, 0.3]}
+    tables, remainder = raster_tables(path, [line], 1000)
+    assert len(tables) == 1
+    assert {(cell["row_index"], cell["column_index"]) for cell in tables[0]["cells"]} == {
+        (row, col) for row in range(rows) for col in range(columns)
+    }
+    assert not remainder
+    assert sum(cell["text_raw"] == "ON DIVIDER" for cell in tables[0]["cells"]) == 1

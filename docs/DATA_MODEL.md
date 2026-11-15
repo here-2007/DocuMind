@@ -1,6 +1,6 @@
 # Data model and provenance contract
 
-This is the full DocuMind schema contract. The PDF extraction subset is implemented by migrations 0001_native, 0002_extraction and 0003_table_types; search/inference/query/business tables remain planned. It is not prescribed in the source PDF. Use PostgreSQL/Alembic for canonical records; Qdrant/BM25 are rebuildable search indexes. UUID values shown below are conceptual identifiers, not existing records.
+This is the full DocuMind schema contract. Migrations 0001–0003 implement PDF extraction, 0004–0005 implement local search and queries, and 0006 implements bounded deterministic comparisons. Use PostgreSQL and Alembic for canonical records. Qdrant and BM25 are rebuildable search indexes. UUID examples are illustrative.
 
 This file is authoritative for persistent enums, lifecycle states and provenance. [INGESTION.md](INGESTION.md) owns recovery/publication procedures; [API_CONTRACT.md](API_CONTRACT.md) owns transport; [EVIDENCE.md](EVIDENCE.md) owns support checks. Other docs must reference these rules instead of defining alternative states.
 
@@ -69,7 +69,7 @@ Add these tables with Phase 2, not the native ingestion migration. INFERENCE.md 
 | `inference_capability_checks` | `id`, `workspace_id`, `connection_id`, `config_version`, `supported_modes`, `model_identity`, `runtime_instance_id?`, `protocol_version`, `release_manifest_hash?`, `probe_artifact_ref`, `trust_basis`, `checked_at` | Immutable evidence for that exact version; synthetic probe artifacts only; connection status selects current readiness |
 | `generation_steps` | `id`, `workspace_id`, `query_run_id`, `ordinal`, `state`, `request_hash`, `status`, `input_tokens?`, `output_tokens?`, `deadline`, `response_artifact_ref?`, `error_code?` | Unique `(workspace_id, query_run_id, ordinal)`; persist intent before dispatch and completion/usage before next step. Private source-derived artifact, never a public trace payload |
 
-Connection `kind`: `managed_kaggle`, `custom_endpoint`. Connection `status`: `configured`, `starting`, `ready`, `unavailable`, `stopping`, `stopped`, `revoked`. Creation is configured; validate/start enters starting; success enters ready and failure enters unavailable with a reason. Health/identity/credential loss moves ready to unavailable. Stop enters stopping then stopped when confirmed, or unavailable with cleanup job/error retained. Explicit validate/start may retry configured/unavailable/stopped when the operation applies; custom endpoints validate, managed endpoints start or validate an existing runtime. Reject start/validate while stopping or after revocation; never auto-start on a query. Edits create a new active version in configured state and invalidate old readiness. Revocation is terminal and immediate from any state; cleanup is tracked separately and must never revive it. Serialize lifecycle jobs and version edits with leases/expected-version checks; an obsolete completion cannot set ready.
+The current local app persists generation connections as `custom_endpoint`. Local servers, private Kaggle loopback bridges and remote APIs share this versioned generation contract. Its implemented states are `configured`, `ready`, `unavailable` and `revoked`. Validation binds an immutable configuration version. Edits invalidate readiness and erase old credentials. Revocation is terminal. Kaggle allocation state belongs to the private operator state file and lifecycle command. The earlier `managed_kaggle` connection design and hosted principal/account tables above are historical targets superseded by ADR-042.
 
 Generation-step `status`: `pending`, `in_flight`, `completed`, `failed`, `cancelled`, `unknown`. Persist pending -> in_flight before outbound dispatch, then one terminal completion/failure/cancel. Crash or ambiguous timeout can yield unknown; only recovery of the original response and usage may promote unknown to completed under a still-active run, otherwise fail the query. Never regenerate unknown work automatically. Confirmed retry safety and shared budgets follow INFERENCE.md.
 
@@ -93,6 +93,8 @@ Account/control-plane and endpoint/inference secrets use distinct references and
 `verification_status`: `supported`, `unsupported`, `unknown`; store identity/span check results separately. Citation quotes are raw source excerpts resolved through offsets. Answers have a unique `query_run_id`. Events have unique `(query_run_id, seq)` and a partial unique index on `query_run_id WHERE event_type IN ('answer', 'error')`. Final run status, answer (on success), and terminal event commit in the same PostgreSQL transaction. Cancellation produces terminal `error` with `QUERY_CANCELLED`. Event delivery can repeat; durable terminal outcomes cannot.
 
 ### Structured records and investigations
+
+The table below describes the broader target. See [Phase 4 local persistence](#phase-4-local-persistence) for the implemented fields.
 
 | Table | Key columns | Rule |
 |---|---|---|
@@ -195,3 +197,35 @@ Migrations 0002/0003 add `metadata_json` to pages/elements, `parent_element_id` 
 Table parent metadata stores row_count, column_count, headers (inferred or null) and continuation=unknown. Cells store row_index, column_index (zero-based), row_span, column_span and is_header; a null header flag is unknown. Element metadata identifies extractor/version; OCR pages include pinned model repository revisions/file hashes and rendering DPI. Normalized boxes remain relative to rotated previews, independent of logical row/column order.
 
 Reviewed versions use the existing ingestion_versions/jobs tables with a frozen review config, reviewer ID, base version and corrections. IDs are regenerated deterministically within the new version; per-element metadata retains reviewed_from_element_id/base_ingestion_version. Review never mutates original rows or makes a document searchable. Downgrade from Phase 1B refuses to discard populated OCR/table/manual-correction provenance; a full migration roundtrip is tested only on an empty disposable DB.
+
+## Phase 2 local persistence
+
+Migration `0004_phase2` adds scoped publication membership, chunk anchors, endpoint versions, encrypted secret references, capability checks, query scopes, citations and events. Existing PostgreSQL leases cover publication, validation and query jobs. Query status comes from its job, while result and terminal event commit together. The single outbound step is represented by a durable dispatch marker on the run and the admitted capability and result metadata. The citation trigger enforces matching query membership and an exact raw quote inside its chunk range.
+
+A document's published version and searchability derive from active publication membership. Extraction history stays immutable across publication changes. Deletion revokes snapshots containing the document and suppresses their pinned query results before cleanup. Cleanup removes their dense, lexical and chunk artifacts, deletes source-derived result and trace content, and clears review correction payloads while preserving tombstone IDs and hashes. The worker queues a replacement when the active pointer has been cleared. Phase 2 data prevents downgrade to the Phase 1B schema. Restore a pre-upgrade backup when a rollback is required.
+
+Migration `0005_publication_recovery` adds `documents.last_published_ingestion_version` with a scoped extraction foreign key and a backfill from successful publications. Successful publication updates that pointer. It preserves the last complete published source for a surviving document when another source's deletion revokes the shared snapshot. The deleted document's pointer is cleared during revocation. Current searchability still requires membership in an active publication.
+
+## Phase 4 local persistence
+
+Migration `0006_comparisons` adds the `comparison` and `report` job kinds and these relations:
+
+| Table | Implemented data |
+|---|---|
+| `investigations`, `investigation_documents` | Workspace, rule, comparison job, revocation timestamp and pinned document/version pairs |
+| `extracted_records` | One typed record per selected version. Role, identifiers, ISO currency, basis, `numeric(20,6)` total and extraction issue |
+| `record_evidence` | One anchored value per recognized field. Scoped page/element foreign keys and a trigger enforcing the exact Unicode source slice |
+| `findings`, `finding_evidence` | One outcome, reason or `numeric(21,6)` difference. Verified outcomes associate invoice and PO grand-total anchors |
+| `report_artifacts` | One CSV artifact and job per investigation, with stored bytes and SHA-256 |
+
+Records, anchors, finding and successful job status commit together. The CSV has at most two source rows for a verified finding and one row for a needs-review outcome. Downloads recompute and compare the bytes and checksum. Revocation removes extracted fields, evidence and report bytes while retaining safe job and investigation metadata. The migration refuses to downgrade when investigations exist.
+
+## Phase 6 local persistence
+
+Migration `0007_reflection` adds `query_runs.mode` and `runtime_snapshot`. Baseline runs retain their required publication and optional ordinary connection version. A Self-RAG run pins the operator-approved origin, manifest, runtime instance, tokenizer token identities and context limit. General runs have no publication or document rows. Document runs retain the existing scoped publication and source-version foreign keys. Service credentials stay in server configuration.
+
+Migration `0009_split_reflection` permits a Self-RAG run to pin a generator connection/version/capability check in addition to its reflection runtime snapshot. Existing runs retain their fields and behavior. The transient recovery journal holds provider intent, the exact generated candidate and its completed critic result. Uncertain work fails closed. Downgrade refuses when split query rows exist.
+
+Migration `0010_artifacts_dispatch` adds nullable accepted original sizes, preview sizes and digests, and a queued-send reservation timestamp. Older rows retain their existing artifact identity. The application checks their original digest and legacy PNG structure when reading them. The reservation limits repeated broker sends independently of the worker lease.
+
+The query trace records step IDs, request hashes, budgets, usage and validated labels. Migration `0008_reflection_recovery` adds a private bounded journal for validated responses and the ordered IDs of the retrieved chunks. It contains temporary candidate text and is cleared on completion, failure, cancellation or source revocation. Public traces never contain candidate text. A replacement worker reconstructs the same query history under its new lease. An unconfirmed external operation fails the run. Downgrade refuses to discard active recovery state or stored Self-RAG runs.

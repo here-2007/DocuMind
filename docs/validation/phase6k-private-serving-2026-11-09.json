@@ -1,0 +1,126 @@
+{
+  "scope": "Operator-only private Kaggle Jupyter model-serving test. Synthetic prompts and experimental Qwen adapter.",
+  "serving_probe": {
+    "manifest_sha256": "9e82e8d234b1964c6604501d164e9ffdc9fc784421ec1ef5cb2178afd22f736e",
+    "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+    "mode": "reflection_pilot",
+    "gateway_authentication": "private Kaggle Jupyter",
+    "unauthenticated_runtime_status": 401,
+    "step_replay_verified": true,
+    "cases": [
+      {
+        "case": "document_decision",
+        "labels": {
+          "decision": "[Retrieve]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 1
+      },
+      {
+        "case": "general_decision",
+        "labels": {
+          "decision": "[NoRetrieve]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 1
+      },
+      {
+        "case": "evidence_candidate",
+        "labels": {
+          "relevance": "[IsREL:Yes]",
+          "support": "[IsSUP:Fully]",
+          "utility": "[IsUSE:5]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 13
+      }
+    ],
+    "created_at": "2026-11-09T07:41:29.017784+00:00"
+  },
+  "owned_notebook": {
+    "kernel": "private notebook 1",
+    "source_version": 1,
+    "source_sha256": "9834e8716d74f58c9608292d3fba63af5a3e1fc8b55dcc7d2ed79e526702cf75",
+    "session_id": 367215762
+  },
+  "cleanup": {
+    "sdk_cancellation_accepted": true,
+    "controller_phase": "access_revoked",
+    "gateway_observation": "HTTP 404 on a later cleanup observation after cancellation.",
+    "gpu_deallocation_confirmed": false,
+    "gateway_status": 404
+  },
+  "controller_live_start": {
+    "kernel": "private notebook 3",
+    "session_id": 367220070,
+    "repeated_start_returned_same_session": true,
+    "cancellation_accepted": true,
+    "controller_phase": "stop_requested"
+  },
+  "local_regression": {
+    "tests": 185,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 125.32,
+    "timestamp": "2026-11-09T14:02:37.467873+05:30"
+  },
+  "gateway_route": "Official private Jupyter gateway and its loopback-port proxy.",
+  "limitations": [
+    "Experimental adapter. No human model approval.",
+    "Public managed connection API, browser controls and hosted multi-user credential integration remain gated.",
+    "Cancellation acceptance and gateway failure do not independently establish GPU allocation cleanup.",
+    "A temporary credential-bearing gateway path appeared in diagnostic tool output. Kaggle accepted cancellation for that session and its gateway later returned HTTP 404. The retired URL was removed from the local scratch state."
+  ],
+  "sources": {
+    "sdk": "https://github.com/Kaggle/kaggle-sdk-python/blob/main/kagglesdk/kernels/services/kernels_api_service.py",
+    "notebooks": "https://www.kaggle.com/docs/notebooks"
+  },
+  "selected_bundle_serving_probe": {
+    "manifest_sha256": "d3d40933de2bde1e338f3dca45dd8c838516f40f12e2ab1a3bc2430d50556002",
+    "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+    "mode": "reflection_pilot",
+    "gateway_authentication": "private Kaggle Jupyter",
+    "unauthenticated_runtime_status": 401,
+    "step_replay_verified": true,
+    "cases": [
+      {
+        "case": "document_decision",
+        "labels": {
+          "decision": "[Retrieve]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 1
+      },
+      {
+        "case": "general_decision",
+        "labels": {
+          "decision": "[Finish]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 1
+      },
+      {
+        "case": "evidence_candidate",
+        "labels": {
+          "relevance": "[IsREL:Yes]",
+          "support": "[IsSUP:Fully]",
+          "utility": "[IsUSE:5]"
+        },
+        "finish_reason": "complete",
+        "output_tokens": 13
+      }
+    ],
+    "created_at": "2026-11-09T08:35:20.256694+00:00",
+    "kernel": "private notebook 2",
+    "session_id": 367232212,
+    "cleanup": {
+      "sdk_cancellation_accepted": true,
+      "controller_phase": "stop_requested",
+      "gateway_status": null,
+      "gpu_deallocation_confirmed": false
+    },
+    "scope": "Packaged operator command with the exact selected v3 experimental bundle.",
+    "general_probe_observation": "The legacy prompt What is 1 plus one? emitted Finish. This prompt is outside the application digit-only addition pattern. The v3 eligible holdout covers supplied-reference repetition."
+  }
+}

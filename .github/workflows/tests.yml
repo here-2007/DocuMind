@@ -1,4 +1,4 @@
-name: PDF extraction
+name: DocuMind workspace
 on: [push, pull_request]
 jobs:
   test:
@@ -9,13 +9,51 @@ jobs:
         with:
           version: "0.6.17"
           enable-cache: true
-      - run: uv sync --frozen --python 3.12 --extra ocr
-      - run: uv run --extra ocr python scripts/setup_ocr.py
-      - run: uv run python scripts/init_local.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --frozen --python 3.12 --extra ocr --extra retrieval --extra training
+      - run: uv run --no-sync python scripts/setup_ocr.py
+      - run: uv run --no-sync python scripts/setup_search.py --probe --reflection-tokenizer
+      - run: |
+          uv run --no-sync python - <<'PY'
+          from huggingface_hub import snapshot_download
+
+          snapshot_download(
+              "HuggingFaceTB/SmolLM2-135M-Instruct",
+              revision="12fd25f77366fa6b3b4b768ec3050bf629380bac",
+              allow_patterns=[
+                  "config.json", "generation_config.json",
+                  "model.safetensors", "tokenizer*",
+              ],
+          )
+          PY
+      - name: Train and reload the bounded CPU reflection pilot
+        timeout-minutes: 10
+        run: |
+          uv run --no-sync python -m documind.reflection_pilot .data/ci-reflection-corpus
+          uv run --no-sync python scripts/train_reflection.py --mode smoke \
+            --corpus .data/ci-reflection-corpus \
+            --expected-corpus-sha "$(shasum -a 256 backend/tests/fixtures/phase5_reflection_manifest.json | cut -d ' ' -f 1)" \
+            --epochs 6 --max-steps 120 --learning-rate .003 --evaluate-test \
+            --output .data/ci-reflection-bundle
+      - run: npm ci && npm run typecheck && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: uv run --no-sync python scripts/init_local.py
       - run: docker compose up -d --wait postgres redis qdrant
-      - run: uv run ruff check backend scripts migrations
-      - run: uv run --extra ocr pytest -q
+      - run: uv run --no-sync ruff check backend scripts migrations
+      - run: uv run --no-sync pytest -q
         env:
           DOCUMIND_TEST_OCR_ROOT: ${{ github.workspace }}/.data/models/ocr
+          DOCUMIND_TEST_RETRIEVAL: "1"
+          DOCUMIND_TEST_CHAT_MODEL: "1"
+          DOCUMIND_TEST_EVAL: "1"
+          DOCUMIND_TEST_BROWSER: "1"
+          DOCUMIND_TEST_REFLECTION_BUNDLE: ${{ github.workspace }}/.data/ci-reflection-bundle
+          DOCUMIND_REQUIRE_REFLECTION_BUNDLE: "1"
       - if: always()
         run: docker compose down

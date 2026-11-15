@@ -62,13 +62,14 @@ def raster_tables(image, lines, max_cells):
     )
     count, labels, stats, _ = cv2.connectedComponentsWithStats(horizontal | vertical)
     tables = []
+    assigned = set()
     for index in range(1, count):
         x, y, w, h, _ = stats[index]
         if w < width * 0.15 or h < height * 0.04:
             continue
         xs = _centers((vertical[y : y + h, x : x + w] > 0).sum(axis=0), h * 0.85)
         ys = _centers((horizontal[y : y + h, x : x + w] > 0).sum(axis=1), w * 0.85)
-        if len(xs) < 3 or len(ys) < 3:
+        if len(xs) < 2 or len(ys) < 2 or (len(xs) == 2 and len(ys) == 2):
             continue
         if (len(xs) - 1) * (len(ys) - 1) > max_cells:
             raise AppError("TABLE_CELL_LIMIT", 422)
@@ -81,7 +82,13 @@ def raster_tables(image, lines, max_cells):
                     (x + right) / width,
                     (y + bottom) / height,
                 ]
-                matches = [line for line in lines if contains(box, line["bbox_norm"])]
+                indices = [
+                    i
+                    for i, line in enumerate(lines)
+                    if i not in assigned and contains(box, line["bbox_norm"])
+                ]
+                assigned.update(indices)
+                matches = [lines[i] for i in indices]
                 cells.append(
                     {
                         "text_raw": "\n".join(line["text_raw"] for line in matches),
@@ -108,7 +115,7 @@ def raster_tables(image, lines, max_cells):
                 "source_type": "ocr",
             }
         )
-    return tables
+    return tables, [line for i, line in enumerate(lines) if i not in assigned]
 
 
 def _centers(values, threshold):

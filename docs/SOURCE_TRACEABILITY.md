@@ -5,7 +5,7 @@ The source is `reference/original_self_rag_spec.pdf`, 7 pages. Page references a
 | Source page/section | Requirement actually stated | DocuMind target | Document / implementation area |
 |---|---|---|---|
 | p. 1 / Problem | Avoid always-on retrieval; learn retrieval decisions | Reflection model and policy-aware skips | `docs/SELF_RAG_SPEC.md`, `query_router` |
-| pp. 1-2 / Architecture | Llama-3.2-3B + QLoRA; retriever; relevance/support/usefulness | Retained in research path | `ARCHITECTURE.md` |
+| pp. 1-2 / Architecture | Llama-3.2-3B + QLoRA; retriever; relevance/support/usefulness | Qwen3-4B replaces the base under D21. The training and retrieval method is retained | `ARCHITECTURE.md` |
 | p. 2 / Fine tuning | 4-bit bitsandbytes and `[Retrieve]`, `[IsREL]`, `[IsSUP]`, `[IsUSE]`; LLM-critic labels | Versioned labels and trained checkpoint | `docs/SELF_RAG_SPEC.md` |
 | p. 2 / Retrieval | Qdrant, all-MiniLM-L6-v2, BM25, RRF, cross encoder | Ranking retained; embedder replaced by EmbeddingGemma 2 (D20 / ADR-020) | `docs/RETRIEVAL.md` |
 | p. 3 / Inference | Intercept token; retrieve, inject, continue; score candidates | Adapted with explicit selfrag-v1 state/mask/scoring contract (D18) | `docs/SELF_RAG_SPEC.md` |

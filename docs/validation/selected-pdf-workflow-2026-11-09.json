@@ -1,0 +1,184 @@
+{
+  "measured_at": "2026-11-09T12:49:58.916572+00:00",
+  "recorded_at": "2026-11-09T13:16:16.290387+00:00",
+  "status": "experimental_evaluated_with_quality_gaps",
+  "production_admission_exercised": false,
+  "admission_scope": "Isolated harness admits the real reflection_pilot capability; production gate is unchanged",
+  "model": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "bundle_manifest_sha256": "d3d40933de2bde1e338f3dca45dd8c838516f40f12e2ab1a3bc2430d50556002",
+    "runtime_mode": "reflection_pilot",
+    "context_limit": 512,
+    "precision": "nf4-fp16-double-quant",
+    "requested_machine_shape": "NvidiaTeslaT4",
+    "sdk_reported_last_machine_shape": "NvidiaTeslaT4",
+    "current_vram_not_measured": true,
+    "remote_package_versions": "not collected before gateway revocation",
+    "sdk_notebook_docker_image": "gcr.io/kaggle-images/python@sha256:0717e81990be591f8c5f98f033d29ab23e9ffde057e5b3a6bd4371f93969e962"
+  },
+  "data": {
+    "corpus_manifest_sha256": "db24d0e311ff9b4eaf4547b6622bb6713c0244a9691a83d10c3c0f087473f066",
+    "case_manifest_sha256": "65c4827b3be2a8f9a969a625b34839816b1a3ba9f7553f7286ae59bc9d4f6ef5",
+    "pdf_case_manifest_sha256": "7c4158d4c5bfaf084383bea5b9f4e7ecbfd7ac77eb343135df2ceef308031647",
+    "pdfs": 32,
+    "cases": 46,
+    "frozen_test_cases": 36,
+    "additional_cases": 10,
+    "synthetic_only": true,
+    "disposable_database": true
+  },
+  "stages": [
+    "authenticated PDF upload",
+    "native parse and ruled-table review",
+    "immutable publication",
+    "Qdrant and BM25 retrieval with reranking",
+    "durable query jobs and scope fencing",
+    "real selected GPU reflection steps",
+    "independent full-source verification",
+    "authorized citation resolution"
+  ],
+  "metrics": {
+    "correct": 43,
+    "n": 46,
+    "by_category": {
+      "abstention/correct": 5,
+      "abstention/n": 5,
+      "frozen_document/correct": 24,
+      "frozen_document/n": 24,
+      "general_arithmetic/correct": 0,
+      "general_arithmetic/n": 2,
+      "long_passage/correct": 1,
+      "long_passage/n": 2,
+      "prompt_injection/correct": 1,
+      "prompt_injection/n": 1,
+      "supplied_reference/correct": 12,
+      "supplied_reference/n": 12
+    },
+    "paraphrases_correct": 12,
+    "paraphrases_n": 12,
+    "false_verified_answers": 0,
+    "transport_failures": 0,
+    "model_steps": 130,
+    "resolved_citations": 26,
+    "source_scope_violations": 0,
+    "document_retrievals": 32,
+    "eligible_retrievals": 0
+  },
+  "failures": [
+    {
+      "case": "long-tail",
+      "outcome": "insufficient_evidence",
+      "cause": "Full amount line retained in 380-token candidate context; distant invoice identifier absent; model emitted IsREL:No"
+    },
+    {
+      "case": "arithmetic-1-1",
+      "outcome": "insufficient_evidence",
+      "cause": "Initial model decision Finish; no candidate generated"
+    },
+    {
+      "case": "arithmetic-27-14",
+      "outcome": "insufficient_evidence",
+      "cause": "Initial model decision Finish; no candidate generated"
+    }
+  ],
+  "cleanup": {
+    "session_id": 367309681,
+    "independent_expiry_cancel_observed": true,
+    "initial": {
+      "kernel": "private notebook 1",
+      "phase": "stop_requested",
+      "session_id": 367309681
+    },
+    "later_observation": {
+      "observed_at": "2026-11-09T13:07:28.234795+00:00",
+      "cleanup": {
+        "kernel": "private notebook 1",
+        "phase": "access_revoked",
+        "session_id": 367309681
+      },
+      "gpu_deallocation": "not independently observable"
+    },
+    "creation_operation_done": true,
+    "creation_operation_error_code": 1,
+    "gpu_deallocation": "not independently observable"
+  },
+  "ci_cpu_pilot": {
+    "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "precision": "fp32",
+    "training_seconds": 31.939123208008823,
+    "trained_rows_checked": 15,
+    "reload_verified": true,
+    "manifest_sha256": "00fe568e8d514f3eb2bf0d36dd37a4bb80824a42b94777c0db2f8efbf110ad2c",
+    "max_steps": 120,
+    "missing_required_artifact_fails": true,
+    "remote_ci_not_run": true
+  },
+  "verifier": "evidence-v1.3",
+  "retrieval": {
+    "budgets": [
+      240,
+      64,
+      64,
+      8192,
+      512
+    ],
+    "chunker": "raw-spans-v2",
+    "dimension": 768,
+    "document_prefix": "title: none | text: ",
+    "dtype": "float32",
+    "embedder": "google/embeddinggemma-2",
+    "embedding_revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+    "library_versions": {
+      "rank-bm25": "0.2.2",
+      "tokenizers": "0.23.3",
+      "torch": "2.15.0",
+      "transformers": "5.22.2"
+    },
+    "loader": "transformers-masked-mean-including-prompt-v1",
+    "modalities": [
+      "text"
+    ],
+    "normalization": "l2",
+    "profile": "hybrid-v3",
+    "query_prefix": "task: search result | query: ",
+    "reranker": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "reranker_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "sparse_tokenizer": "casefold-ids-v1"
+  },
+  "environment": {
+    "packages": {
+      "peft": "0.19.1",
+      "torch": "2.15.0",
+      "transformers": "5.22.2"
+    },
+    "platform": "macOS-26.6.2-arm64-arm-64bit"
+  },
+  "source_sha256": {
+    "backend/documind/evidence.py": "0a1571d89741b71ba73c36a1c8e334c7216de05a494a1f0a443470053298cd6a",
+    "backend/documind/reflection_context.py": "91b467be713f4eb754c4d0193805df4cff1184ef4af8b0e620224b9589a5ebf3",
+    "backend/documind/reflection_queries.py": "481c5d688103aa6bec8fe70651c67a82009873d50c6946f0a1eb5950c767afdf",
+    "backend/documind/reflection_runtime.py": "5ce3726bc55b55d621359df05ce07cde5005afc97023cb47cd39721bde753a53",
+    "backend/documind/selfrag.py": "d37b61ae1f64d070dfbffb50cd4bc49d8495c9e9161ef4439e6a64cab17ba0fa",
+    "scripts/evaluate_selected_workflow.py": "214beace0586066d856f21353810a7ad93ccc967cb7237cf7bde2379ec901349"
+  },
+  "artifacts": {
+    "private_raw_report": ".data/selected-pdf-workflow-2026-11-09.json",
+    "raw_sha256": "3aea1f7ac58762bd950471e06a88f536ab5df5712d3498a98b414e08e68914f2",
+    "retained_input_pdfs": ".data/selected-pdf-workflow-2026-11-09-inputs",
+    "cleanup_observation_sha256": "55a5067b4622f9b620e02b833c99b36aa9e96260f9dd6bb0c01da73b0b642e08"
+  },
+  "limits": [
+    "Synthetic diagnostic, not representative product accuracy",
+    "Production release admission and gateway transport are explicitly injected only in an isolated operator harness",
+    "Citations resolved during execution; disposable DB is removed after assertions; source PDFs and raw results retained privately",
+    "No tuning or retraining after observing these held-out outcomes",
+    "No human approval, hosted multi-user lifecycle or physical GPU-deallocation claim",
+    "Remote package versions/VRAM were not collected before gateway revocation; Docker metadata is provider-reported"
+  ],
+  "source_sha256_at_followup": {
+    "scripts/kaggle_serving_probe.py": "d3410c7222c0bba00c18d164a578d9867cd0a997680e924c01b28959eeacb0bf",
+    "backend/documind/kaggle_session.py": "40e035d26aaf5df1cda57ceeffd72f648e1b069f1cf61de782b87817167019e2",
+    "backend/documind/runtime_lifetime.py": "d817618bc387832eb269f9dc09f1370f0c129dda0aed2c17aa13a075cae6a752"
+  }
+}

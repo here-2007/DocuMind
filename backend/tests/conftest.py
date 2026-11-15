@@ -89,3 +89,33 @@ def pdf():
             return doc.tobytes()
 
     return make
+
+
+@pytest.fixture
+def table_pdf():
+    def make(scanned=False, rotation=0):
+        with pymupdf.open() as doc:
+            page = doc.new_page(width=300, height=300)
+            for x in (30, 150, 270):
+                page.draw_line((x, 60), (x, 180))
+            for y in (60, 100, 140, 180):
+                page.draw_line((30, y), (270, y))
+            for x, y, text in (
+                (40, 85, "Item"),
+                (160, 85, "Amount"),
+                (40, 125, "Pens"),
+                (160, 125, "12.50"),
+                (40, 165, "Paper"),
+            ):
+                page.insert_text((x, y), text, fontsize=14)
+            if scanned:
+                png = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).tobytes("png")
+                with pymupdf.open() as scan:
+                    p = scan.new_page(width=300, height=300)
+                    p.insert_image(p.rect, stream=png)
+                    p.set_rotation(rotation)
+                    return scan.tobytes()
+            page.set_rotation(rotation)
+            return doc.tobytes()
+
+    return make

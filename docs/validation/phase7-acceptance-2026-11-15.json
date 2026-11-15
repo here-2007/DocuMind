@@ -1,0 +1,77 @@
+{
+  "recorded_at": "2026-11-15T13:29:40.954925+00:00",
+  "decision": "phase_7_local_csv_product_acceptance_passed",
+  "scope": "Exact invoice and purchase order grand totals, authorized evidence, one immutable CSV per investigation. Local application.",
+  "browser": {
+    "runtime": "Production Next.js build with real FastAPI, PostgreSQL, Redis, Celery and durable dispatcher on disposable data",
+    "indexing_and_inference_enabled": false,
+    "invoice_inr": "1100.00",
+    "purchase_order_inr": "1000.00",
+    "difference_inr": "100.00",
+    "source_pages_opened": 2,
+    "lost_create_receipt_replayed_same_body_key_and_investigation": true,
+    "simulated_recheck_response_cleared_finding_highlight_and_download": true,
+    "confirmed_delete_revoked_csv_and_released_upload_slot_after_cleanup": true,
+    "cancelled_delete_preserved_report": true
+  },
+  "workspace_isolation": {
+    "populated_workspaces": 2,
+    "verified_differences_inr": [
+      "100.00",
+      "6123.45"
+    ],
+    "foreign_scope_and_foreign_ids_under_local_prefix": "404 for detail, findings, evidence, report metadata and report contents in both directions",
+    "mixed_source_selection_denied": true
+  },
+  "upload_quota": {
+    "default_documents_per_workspace": 200,
+    "per_file_default_bytes": 20971520,
+    "at_capacity_http_status": 409,
+    "concurrent_new_uploads_at_one_remaining_slot": {
+      "accepted": 1,
+      "denied": 1
+    },
+    "accepted_receipt_replay_at_capacity": true,
+    "new_objects_or_jobs_created_on_denial": false
+  },
+  "verification": {
+    "pytest": {
+      "passed": 265,
+      "failed": 0,
+      "skipped": 0,
+      "dependency_warnings": 5,
+      "elapsed_seconds": 158.117,
+      "selected_cases": [
+        "test_next_workspace_in_browser[phase7]",
+        "test_next_workspace_in_browser[workspace]",
+        "test_comparison_and_report_isolate_two_populated_workspaces",
+        "test_workspace_quota_admits_one_concurrent_upload_and_releases_after_cleanup",
+        "test_reviewed_competing_table_total_blocks_new_and_existing_exports",
+        "test_publication_atomicity_and_model_identity",
+        "test_migration_roundtrip"
+      ]
+    },
+    "ruff": "passed",
+    "frontend_typecheck": "passed",
+    "frontend_production_build": "passed",
+    "uv_lock_check": "passed",
+    "alembic_check": "passed"
+  },
+  "private_evidence_directory": ".data/phase7-acceptance-2026-11-15",
+  "junit_sha256": "3e06211fc19319ca5c21f0af6e38ea32922cec6cb1a720a8426bf2ec64ec413d",
+  "verified_source_sha256": {
+    ".env.example": "45cae0cc339bb1c6ffd345e059b6d8bce0ab49d239ecc8c289fbfd4f2f3b803f",
+    "backend/documind/config.py": "b236fd417ff3fd422fcc7bd27e6fa7f70c7b85b73aee3a24462709272c790e98",
+    "backend/documind/repository.py": "2c8021447034cdaf59ed7a200487dfa33e037c01d7e152c3b3a80dac6245150c",
+    "backend/documind/investigations.py": "e7684cb336750c7e2a82d8c61ced6053e42bc481dbbdf96b083a57c615fc13dd",
+    "backend/tests/test_ingestion.py": "7886f26b9af594a93b401a4854398c91f13dfbe3a1f09f6e474b7fdcffcfecf6",
+    "backend/tests/test_comparison.py": "c047e6bfcd09451fdb940c8f92646334acbb12402d04349646ab52bfe6fd67a4",
+    "backend/tests/test_phase3_browser.py": "0e5bdab69b93a4c5af98023b16b67af243a543503deafc3707a808914ab4af57",
+    "frontend/components/comparisons.tsx": "48df23b43be18f75161a41538c8f00a7bffca621ec9f3d0fa7751b2974016ba0",
+    "frontend/components/source-viewer.tsx": "adb8fb0c905be894266bdab424ba7eb204c5dcc16708f2d9db52c3388e0707ba",
+    "frontend/components/workspace.tsx": "b9ef5c9acba63b0f8464d0af2cc085026fcc491c99d75556d96f516102e33e5b",
+    "frontend/lib/api.ts": "66080aa6a78180071f23deb26e8957d85e2ba4259b4172eda98558b33246a2fe",
+    "frontend/tests/workspace.spec.ts": "b7f8fc0d0329ea8f0d33d906672cab39bfc4c17ea0884aa5c6adce022073dbb2"
+  },
+  "suite_setup_correction": "Initial focused quota assertion counted files from earlier fixtures in the session-scoped object store. The test was corrected to check the object delta."
+}

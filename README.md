@@ -2,7 +2,13 @@
 
 **Self-RAG Powered Multimodal Document Intelligence and Cross-Document Reasoning Platform**
 
-**Status:** Phase 0/1A review fixes and bounded Phase 1B PDF extraction are implemented locally: native text, optional English PaddleOCR, ruled-table cells and immutable human review. See [current verification](PROGRESS.md) and [runtime setup](docs/LOCAL_DEVELOPMENT.md). Search, generation, Next.js and the broader research platform remain planned. General scan accuracy, public deployment and production capacity are unverified.
+DocuMind runs locally on your device. Choose the fine-tuned reflection model on your device or in your private Kaggle session. Choose answer generation independently on your device, Kaggle, or an API endpoint with your key. Embedding, reranking, document storage and validation stay local. [Model setup](docs/LOCAL_DEVELOPMENT.md#local-only-model-setup).
+
+**Status.** The local app supports PDF extraction, hybrid search, source-cited baseline QA and exact invoice/purchase-order grand-total comparisons. The Phase 7 comparison and CSV release passed local acceptance with inference disabled. The Next.js workspace shows replayable traces, cited findings and downloadable CSVs. Native text, optional English OCR, ruled tables and immutable review feed the same backend. [Workspace setup](docs/LOCAL_DEVELOPMENT.md#phase-3-workspace) · [Comparison setup](docs/LOCAL_DEVELOPMENT.md#phase-4-deterministic-comparison) · [Verification](PROGRESS.md).
+
+Qwen v4 passed delegated operator review for opt-in experimental use with private Kaggle reflection. The tested profiles matched 73/73 integrated cases and 72/73 split regression cases, with zero false verified answers. One adversarial split case safely abstains. Clean local setup passed with verified cached weights. The trained FP16 MPS profile timed out on the tested 16 GB Mac. [Release and setup evidence](docs/validation/local-release-2026-11-15.json) · [Current verification](PROGRESS.md).
+
+Phase 8 measured the same pinned Qwen base against integrated trained Self-RAG. On the broader 200-case synthetic set, baseline scored 86% and Self-RAG 81%, with median query times of 1.42 s and 6.18 s. Every emitted citation matched gold evidence, with recall of 91.67% and 73.33%. The older 60-case pre-training cohort scored 75% and 100%. Disabling support-critic filtering and scoring changed zero final answers. These controlled results retain the trained model's relevance refusals and broader coverage misses. The 200-case set was created after training. Human review and representative research validation remain open. [Results, ablations and limitations](docs/validation/phase8-benchmark-2026-11-15.md).
 
 ## Start here (for developers and Codex)
 
@@ -20,15 +26,15 @@ Original source: [`reference/original_self_rag_spec.pdf`](reference/original_sel
 
 ## System Overview
 
-This root blueprint covers a working **local PDF extraction and preview backend** plus the planned product. Start with [local setup and implemented routes](./docs/LOCAL_DEVELOPMENT.md). OCR is opt-in; search, generation, Next.js and managed Kaggle are later milestones; [project status](./PROGRESS.md) records observed validation.
+This blueprint covers the local PDF, retrieval, baseline QA and structured comparison backend plus the planned product. OCR, indexing and endpoint generation are opt-in. The [runbook](./docs/LOCAL_DEVELOPMENT.md) lists the available routes and the [project status](./PROGRESS.md) records verification.
 
 A workspace where a user uploads business documents (including scanned PDFs), asks evidence-based questions across them, identifies inconsistent facts or amounts, and receives an answer with document/page/element citations and an auditable retrieval trace.
 
-**Signature demo:** upload a purchase order, invoice and contract; ask *“Which invoiced amounts differ from the purchase order and what evidence explains each discrepancy?”* The system parses the documents, matches records, retrieves evidence, validates arithmetic with code, and shows the exact cited pages. It should abstain when documents or extraction confidence are insufficient.
+**Signature demo.** Upload one invoice and its purchase order. Open **Compare documents**, select both PDFs, and run the comparison. It checks the explicit PO and vendor IDs, currency and total basis, then shows the exact grand-total difference and the highlighted source lines. Open both sources and export the cited CSV. Ambiguous records produce a reason for abstention. [Demo setup](docs/LOCAL_DEVELOPMENT.md#phase-4-deterministic-comparison).
 
 ## Global Invariants
 
-The native slice enforces scoped database references, local Bearer access, immutable promoted sources, bounded PDF parsing and fenced job promotion in [backend/documind](./backend/documind/api.py) and the [first migration](./migrations/versions/0001_native.py). The following broader product requirements come from [AGENTS.md — Nonnegotiable rules](./AGENTS.md#nonnegotiable-rules); later retrieval/model requirements remain unimplemented:
+The executable local app enforces scoped database references, local Bearer access, immutable sources, bounded parsing and fenced jobs. Retrieval/model and later product acceptance are tracked in [PROGRESS.md](PROGRESS.md). The following requirements come from [AGENTS.md — Nonnegotiable rules](./AGENTS.md#nonnegotiable-rules):
 
 - **Evidence over fluency.** Never fabricate a citation, calculation, OCR result or metric.
 - **Deterministic work stays deterministic.** Python/SQL handle sums, mismatches and currency rules; the LLM explains findings.
@@ -41,15 +47,15 @@ The native slice enforces scoped database references, local Bearer access, immut
 
 | Area | Technology | Role |
 |---|---|---|
-| Web | Next.js, React, TypeScript, Tailwind | Document viewer, chat, investigation workspace, trace |
+| Web | Next.js, React, TypeScript, CSS | Document viewer, chat, connection setup, trace |
 | API | FastAPI, Pydantic | Document and question workflows, streaming events |
 | Ingestion | PyMuPDF, Docling, PaddleOCR, OpenCV (as needed) | Native text, structure, OCR, tables |
 | Storage | PostgreSQL, object storage, Qdrant | Structured metadata, originals, vectors |
 | Jobs | Redis and Celery | Asynchronous parsing and indexing |
 | Search | `google/embeddinggemma-2`, `rank_bm25`, RRF, `cross-encoder/ms-marco-MiniLM-L6-v2` | Dense + sparse + reranking |
-| Generation | Llama 3.2 3B Instruct, Transformers, PEFT, bitsandbytes, TRL | Baseline and trained reflection-token inference |
+| Generation | Qwen3-4B-Instruct-2507, PyTorch, Transformers, PEFT, bitsandbytes | Baseline and trained reflection-token inference |
 | Evaluation | pytest, RAGAS, custom scoring, pandas | Reproducible comparison and audit |
-| Deployment | Docker Compose first | Repeatable local development; optional hosted deployment later |
+| Application execution | Local processes and Docker Compose | UI, API, workers and stores stay on the user's device |
 
 This stack is a **target**, not a claim that every dependency works on every CPU/GPU. See `DECISIONS.md`.
 
@@ -59,24 +65,25 @@ This stack is a **target**, not a claim that every dependency works on every CPU
 |---|---|
 | Embedding | `google/embeddinggemma-2`, text-only, 768 dimensions; hybrid-v3 in RETRIEVAL.md |
 | Reranking | `cross-encoder/ms-marco-MiniLM-L6-v2` |
-| Baseline generation | Default controlled model: `meta-llama/Llama-3.2-3B-Instruct`; supported external endpoint models allowed with recorded identity |
-| Self-RAG generation and critic | Same Llama base with a separately trained reflection-token adapter; no separate serving critic model |
+| Baseline generation | Controlled model `Qwen/Qwen3-4B-Instruct-2507`. Other supported external endpoint models require recorded identity |
+| Trained reflection | Pinned Qwen base and adapter for retrieval decisions and candidate criticism, on this device or private Kaggle |
+| Independently selected generator | Local, private Kaggle or an OpenAI-compatible external endpoint. Integrated Qwen remains available for controlled research |
 | OCR / tables | CPU PaddleOCR 3.7.0 / PaddlePaddle 3.3.1 with PP-OCRv5 mobile detection + English recognition; PyMuPDF/native and OpenCV/scanned ruled tables. Docling/general layout remains deferred |
 | Claim/citation verification | Deterministic evidence-v1 checks; no additional model |
 
-These are fixed model selections, not validated checkpoint revisions. Pin immutable model/tokenizer revisions and compatible dependencies during the relevant implementation milestone. External annotation teachers remain optional and separately configured; no provider is enabled by this selection. ADR-020 records the embedding change; ADR-021 permits explicitly selected external baseline generators and defines the two inference connections.
+Executable loaders and experiment manifests pin model/tokenizer revisions and dependencies. Experimental checkpoints still require release approval; current validation is in PROGRESS.md. External annotation teachers remain optional and separately configured. ADR-020 records the embedding change; ADR-021 defines the inference connections; ADR-031 pins the open Qwen generation base.
 
 ### Inference connection options
 
-1. **Managed Kaggle:** the user authorizes their Kaggle account; DocuMind provisions and monitors a private notebook running our complete trained model service. This remains unavailable until platform, security and runtime gates pass.
-2. **Custom endpoint:** the user supplies an inference endpoint, model ID and credential. Ordinary models provide baseline RAG; only a validated compatible trained runtime provides Self-RAG. No additional local Llama is required for ordinary endpoint generation.
+1. **Fine-tuned reflection model:** run the checked model service locally, or start a private Kaggle session with the local bridge command.
+2. **Answer generator:** select a local server, private Kaggle bridge, or external endpoint/model/API key in the workspace.
 
-The same connection contract supports a fully local installation and a local trained service without an external provider key. Hosted embedding/reranking stay on DocuMind; fully local deployments keep them on the user's system. Kaggle quota exhaustion never silently switches providers or modes: the user selects a ready endpoint for a new run. Full contract: [inference and deployment](docs/INFERENCE.md), ADR-021.
+The split path lets the trained runtime evaluate the selected generator's exact candidate. Each run records both identities and applies independent evidence checks. Model outages require an explicit choice for a new run. The app has no public deployment target. [Execution contract](docs/INFERENCE.md) · [ADR-042](DECISIONS.md#adr-042-local-only-application-with-independent-reflection-and-generation).
 
 ## Interface
 
-- **Implemented interface:** [API routes](./docs/LOCAL_DEVELOPMENT.md#implemented-routes) provide health/readiness, local workspace access, upload/job/retry/reprocess, original/page/element/image reads and safe deletion. [Repository](./backend/documind/repository.py), [parser](./backend/documind/parser.py), [worker](./backend/documind/worker.py) and [schema](./backend/documind/schema.py) implement the slice. Remaining design APIs are future contracts.
-- **Configuration template:** [`.env.example`](./.env.example) declares proposed flags including `INDEXING_ENABLED=false`, `GENERATION_ENABLED=false`, `SELF_RAG_ENABLED=false` and `MANAGED_KAGGLE_ENABLED=false`. `GENERATION_ENDPOINT_URL` and `GENERATION_API_KEY` are blank local-only connection seeds; hosted user credentials belong in the scoped secret-management design in [SECURITY.md](./docs/SECURITY.md). The [settings loader](./backend/documind/config.py) consumes native-slice settings and rejects enabling unimplemented capabilities; future model/endpoint fields remain reserved.
+- **Implemented interface.** The Next.js workspace covers upload, source review, publication, chat, citations, endpoint setup and invoice/PO investigations with CSV export. The API supports SSE and JSON trace replay. See the [runbook](./docs/LOCAL_DEVELOPMENT.md#phase-3-workspace).
+- **Configuration.** `INDEXING_ENABLED` and `GENERATION_ENABLED` activate the local Phase 2 paths. Configure endpoint credentials through the scoped API and keep `INFERENCE_SECRET_KEY` private. See [the environment template](./.env.example) and [security contract](./docs/SECURITY.md).
 - **Developer instructions:** [AGENTS.md](./AGENTS.md) defines implementation requirements and the required reading order. The documentation index below provides the current human/agent navigation surface.
 
 ## The first demo that counts as working
@@ -86,6 +93,7 @@ Upload one native-text PDF, finish an ingestion job, ask a question, get an answ
 ## Subdirectories & System Boundaries
 
 - **`backend/`:** FastAPI, PostgreSQL repository, parser subprocess, private object storage, Celery worker/dispatcher and unit/integration tests. Entry point: [api.py](./backend/documind/api.py).
+- **`frontend/`:** The local Next.js workspace, protected API forwarding, source viewer and Playwright scenarios. Entry point [page.tsx](./frontend/app/page.tsx).
 - **`migrations/`:** Frozen Alembic schema and PostgreSQL source-integrity triggers; [initial revision](./migrations/versions/0001_native.py).
 - **`scripts/`:** [Private local configuration](./scripts/init_local.py) and [live synthetic smoke check](./scripts/smoke.py).
 - **`.github/workflows/`:** [CI test workflow](./.github/workflows/tests.yml) for local-service integration tests.
@@ -150,7 +158,7 @@ uv run ruff check backend scripts migrations
 uv run python scripts/smoke.py
 ```
 
-Run configuration initialization once; it refuses to overwrite an existing `.env`. Integration tests use a disposable PostgreSQL database; the smoke check uses the running app and deletes its synthetic fixture. [Local development](./docs/LOCAL_DEVELOPMENT.md) documents alternatives and private Bearer access. [Project status](./PROGRESS.md) records actual test results and pending gates. The next milestone after this native slice is Phase 2 retrieval and baseline generation; no model or Kaggle credentials are required for native preview.
+Run configuration initialization once. Integration tests use a disposable PostgreSQL database, and the smoke check uses the running app and deletes its synthetic fixture. Native preview runs without model or Kaggle credentials. The [local runbook](./docs/LOCAL_DEVELOPMENT.md) covers private Bearer access and optional Phase 2 setup. [Project status](./PROGRESS.md) records verification and pending gates.
 
 ## What not to claim
 

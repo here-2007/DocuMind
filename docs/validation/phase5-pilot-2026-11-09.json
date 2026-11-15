@@ -1,0 +1,535 @@
+{
+  "scope": "Phase 4 correction and Phase 5 offline synthetic pilot. No Llama release or benchmark.",
+  "regression": {
+    "tests": 129,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 103.522,
+    "timestamp": "2026-11-09T10:30:18.470586+05:30"
+  },
+  "corpus_counts": {
+    "train": 12,
+    "validation": 6,
+    "test": 24
+  },
+  "target_model_access": {
+    "repo": "meta-llama/Llama-3.2-3B-Instruct",
+    "revision": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+    "hugging_face_tokenizer_http_status": 403,
+    "kaggle_tokenizer_http_status": 403,
+    "target_checkpoint_trained": false
+  },
+  "cpu_smoke": {
+    "mode": "smoke",
+    "created_at": "2026-11-09T04:58:38.606473+00:00",
+    "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "base_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "packages": {
+      "accelerate": "1.13.0",
+      "peft": "0.19.1",
+      "torch": "2.15.0",
+      "transformers": "5.22.2"
+    },
+    "gpu": null,
+    "cuda": null,
+    "peak_gpu_bytes": null,
+    "training_seconds": 31.844888999999966,
+    "trained_rows_checked": 15,
+    "minimum_row_gradient": 0.07429500669240952,
+    "reload_verified": true,
+    "precision": "fp32",
+    "seed": 2026,
+    "lora_rank": 16,
+    "batch_size": 2,
+    "learning_rate": 0.003,
+    "probe_generated_token_id": 49152,
+    "probe_gold_token_id": 49152,
+    "metrics_kind": "teacher_forced_family_constrained",
+    "serializer_sha256": "e1e1a2ac6e555678490871714c811eba59fb2d89d1525c1481dad5ee12ad8079",
+    "protocol_sha256": "316dcc9466e8c12f921f7b709507ef32d2e96790be835e6ef6cfda41aaf41062",
+    "trainer_sha256": "c877f7083fd0ba13ba4d6cd622a76d723af2b17dd47fdacdc0f61870a5796f45",
+    "corpus_manifest_sha256": "f511584fd0edd4d7d0db1f6c195917d18d9f0c9ff08c295033274a6adb77e8f4",
+    "optimizer_steps": 120,
+    "bundle_manifest_sha256": "1e1893729b43f36c83f97f6540566149d4545e8cc66cc85cd24f6f8a1327948d",
+    "artifact_checksums_verified": 9,
+    "artifact_path_local_ignored": ".data/phase5-cpu-v2",
+    "probe_generated_label": "[Retrieve]",
+    "raw_test_initial_decisions": [
+      {
+        "gold": "[NoRetrieve]",
+        "predicted": "[NoRetrieve]",
+        "count": 12
+      },
+      {
+        "gold": "[Retrieve]",
+        "predicted": "[Retrieve]",
+        "count": 12
+      }
+    ],
+    "test_metrics": {
+      "decision": {
+        "confusion": [
+          {
+            "count": 6,
+            "gold": "[Continue]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 24,
+            "gold": "[Finish]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 48,
+        "n": 54
+      },
+      "initial_retrieval": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 24,
+        "n": 24
+      },
+      "relevance": {
+        "confusion": [
+          {
+            "count": 24,
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 41,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 1,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:Yes]"
+          }
+        ],
+        "correct": 25,
+        "n": 66
+      },
+      "support": {
+        "confusion": [
+          {
+            "count": 18,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Fully]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:Partially]",
+            "predicted": "[IsSUP:Fully]"
+          }
+        ],
+        "correct": 30,
+        "n": 42
+      },
+      "utility": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsUSE:2]",
+            "predicted": "[IsUSE:2]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:2]"
+          },
+          {
+            "count": 18,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]"
+          }
+        ],
+        "correct": 42,
+        "n": 54
+      }
+    }
+  },
+  "kaggle_nf4_smoke": {
+    "mode": "qlora-smoke",
+    "created_at": "2026-11-09T05:02:01.043130+00:00",
+    "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "base_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "packages": {
+      "accelerate": "1.13.0",
+      "bitsandbytes": "0.50.2",
+      "peft": "0.19.1",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.22.2"
+    },
+    "gpu": "Tesla T4",
+    "cuda": "13.0",
+    "peak_gpu_bytes": 472441856,
+    "training_seconds": 42.32226813899996,
+    "trained_rows_checked": 15,
+    "minimum_row_gradient": 0.005512947682291269,
+    "reload_verified": true,
+    "precision": "nf4-fp16-double-quant",
+    "seed": 2026,
+    "lora_rank": 16,
+    "batch_size": 2,
+    "learning_rate": 0.003,
+    "probe_generated_token_id": 49152,
+    "probe_gold_token_id": 49152,
+    "metrics_kind": "teacher_forced_family_constrained",
+    "serializer_sha256": "e1e1a2ac6e555678490871714c811eba59fb2d89d1525c1481dad5ee12ad8079",
+    "protocol_sha256": "316dcc9466e8c12f921f7b709507ef32d2e96790be835e6ef6cfda41aaf41062",
+    "trainer_sha256": "c877f7083fd0ba13ba4d6cd622a76d723af2b17dd47fdacdc0f61870a5796f45",
+    "corpus_manifest_sha256": "f511584fd0edd4d7d0db1f6c195917d18d9f0c9ff08c295033274a6adb77e8f4",
+    "optimizer_steps": 120,
+    "bundle_manifest_sha256": "7671a4904ac56399d8cfdce95a4ebd6ae8059a74bf539663fc8b5d15bd0672e7",
+    "artifact_checksums_verified": 9,
+    "artifact_path_local_ignored": ".data/phase5-kaggle-v3/phase5-nf4",
+    "probe_generated_label": "[Retrieve]",
+    "raw_test_initial_decisions": [
+      {
+        "gold": "[NoRetrieve]",
+        "predicted": "[NoRetrieve]",
+        "count": 12
+      },
+      {
+        "gold": "[Retrieve]",
+        "predicted": "[NoRetrieve]",
+        "count": 7
+      },
+      {
+        "gold": "[Retrieve]",
+        "predicted": "[Retrieve]",
+        "count": 5
+      }
+    ],
+    "test_metrics": {
+      "decision": {
+        "confusion": [
+          {
+            "count": 4,
+            "gold": "[Continue]",
+            "predicted": "[Continue]"
+          },
+          {
+            "count": 2,
+            "gold": "[Continue]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 1,
+            "gold": "[Finish]",
+            "predicted": "[Continue]"
+          },
+          {
+            "count": 11,
+            "gold": "[Finish]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[Finish]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 7,
+            "gold": "[Retrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 5,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 32,
+        "n": 54
+      },
+      "initial_retrieval": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 7,
+            "gold": "[Retrieve]",
+            "predicted": "[NoRetrieve]"
+          },
+          {
+            "count": 5,
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]"
+          }
+        ],
+        "correct": 17,
+        "n": 24
+      },
+      "relevance": {
+        "confusion": [
+          {
+            "count": 24,
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 28,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 14,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:Yes]"
+          }
+        ],
+        "correct": 38,
+        "n": 66
+      },
+      "support": {
+        "confusion": [
+          {
+            "count": 14,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Fully]"
+          },
+          {
+            "count": 4,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Partially]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:Partially]",
+            "predicted": "[IsSUP:Partially]"
+          }
+        ],
+        "correct": 38,
+        "n": 42
+      },
+      "utility": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsUSE:2]",
+            "predicted": "[IsUSE:5]"
+          },
+          {
+            "count": 30,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]"
+          }
+        ],
+        "correct": 42,
+        "n": 54
+      }
+    },
+    "kernel_version": 3
+  },
+  "kaggle_nf4_short_probe": {
+    "mode": "qlora-smoke",
+    "created_at": "2026-11-09T04:58:07.139564+00:00",
+    "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "base_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "packages": {
+      "accelerate": "1.13.0",
+      "bitsandbytes": "0.50.2",
+      "peft": "0.19.1",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.22.2"
+    },
+    "gpu": "Tesla T4",
+    "cuda": "13.0",
+    "peak_gpu_bytes": 472441856,
+    "training_seconds": 5.75175342,
+    "trained_rows_checked": 15,
+    "minimum_row_gradient": 0.005512947682291269,
+    "reload_verified": true,
+    "precision": "nf4-fp16-double-quant",
+    "seed": 2026,
+    "lora_rank": 16,
+    "batch_size": 2,
+    "learning_rate": 0.003,
+    "probe_generated_token_id": 49155,
+    "probe_gold_token_id": 49152,
+    "metrics_kind": "teacher_forced_family_constrained",
+    "serializer_sha256": "e1e1a2ac6e555678490871714c811eba59fb2d89d1525c1481dad5ee12ad8079",
+    "protocol_sha256": "316dcc9466e8c12f921f7b709507ef32d2e96790be835e6ef6cfda41aaf41062",
+    "trainer_sha256": "c877f7083fd0ba13ba4d6cd622a76d723af2b17dd47fdacdc0f61870a5796f45",
+    "corpus_manifest_sha256": "f511584fd0edd4d7d0db1f6c195917d18d9f0c9ff08c295033274a6adb77e8f4",
+    "optimizer_steps": 12,
+    "bundle_manifest_sha256": "2138a81874508ae83dbf32c53e4904f57f6ad005b9538633923d9d44725e99bf",
+    "artifact_checksums_verified": 9,
+    "artifact_path_local_ignored": ".data/phase5-kaggle-v2/phase5-nf4",
+    "probe_generated_label": "[Finish]",
+    "raw_test_initial_decisions": [
+      {
+        "gold": "[NoRetrieve]",
+        "predicted": "[Finish]",
+        "count": 12
+      },
+      {
+        "gold": "[Retrieve]",
+        "predicted": "[Finish]",
+        "count": 12
+      }
+    ],
+    "test_metrics": {
+      "decision": {
+        "confusion": [
+          {
+            "count": 6,
+            "gold": "[Continue]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 24,
+            "gold": "[Finish]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Finish]"
+          }
+        ],
+        "correct": 24,
+        "n": 54
+      },
+      "initial_retrieval": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[NoRetrieve]",
+            "predicted": "[Finish]"
+          },
+          {
+            "count": 12,
+            "gold": "[Retrieve]",
+            "predicted": "[Finish]"
+          }
+        ],
+        "correct": 0,
+        "n": 24
+      },
+      "relevance": {
+        "confusion": [
+          {
+            "count": 24,
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]"
+          },
+          {
+            "count": 42,
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:No]"
+          }
+        ],
+        "correct": 24,
+        "n": 66
+      },
+      "support": {
+        "confusion": [
+          {
+            "count": 18,
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:No]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsSUP:Partially]",
+            "predicted": "[IsSUP:No]"
+          }
+        ],
+        "correct": 12,
+        "n": 42
+      },
+      "utility": {
+        "confusion": [
+          {
+            "count": 12,
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsUSE:2]",
+            "predicted": "[IsUSE:5]"
+          },
+          {
+            "count": 18,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:1]"
+          },
+          {
+            "count": 12,
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]"
+          }
+        ],
+        "correct": 24,
+        "n": 54
+      }
+    },
+    "kernel_version": 2
+  }
+}

@@ -1,0 +1,524 @@
+{
+  "recorded_at": "2026-11-15T12:26:28.606592+00:00",
+  "status": "phase6_engineering_validation_complete_experimental",
+  "architecture": "ADR-042",
+  "scope": "Selected immutable Qwen v4 NF4 reflection profile with integrated generation and independent Qwen FP16 MPS generation. Synthetic operator acceptance; not a representative research benchmark.",
+  "model": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "bundle_manifest_sha256": "0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543",
+    "corpus_manifest_sha256": "0f3864f7040332dbeefd6d5bdd7dc82685bcadf513d74c67617e897f13321beb",
+    "context_limit": 512,
+    "reflection_profile": "nf4-cuda",
+    "trained_reflection_rows": 15,
+    "weights_changed": false,
+    "generator_id": "Qwen/Qwen3-4B-Instruct-2507",
+    "generator_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "generator_profile": "fp16-mps",
+    "generator_revision_trust": "Operator-launched pinned local model; chat API reports model ID, not a weight attestation"
+  },
+  "data": {
+    "synthetic_only": true,
+    "cases": 73,
+    "frozen_corpus_test_cases": 60,
+    "application_regressions_and_fresh_long_cases": 13,
+    "pdfs": 35,
+    "case_manifest_sha256": "40d15d080a68fe1211afc589e0a10670863c753cd762a8d16c798239de49a4c8",
+    "disposable_application_stores": true
+  },
+  "integrated_workflow": {
+    "correct": 73,
+    "n": 73,
+    "by_category": {
+      "abstention/correct": 6,
+      "abstention/n": 6,
+      "frozen_document/correct": 24,
+      "frozen_document/n": 24,
+      "general_arithmetic/correct": 2,
+      "general_arithmetic/n": 2,
+      "heldout_arithmetic/correct": 24,
+      "heldout_arithmetic/n": 24,
+      "long_passage/correct": 4,
+      "long_passage/n": 4,
+      "prompt_injection/correct": 1,
+      "prompt_injection/n": 1,
+      "supplied_reference/correct": 12,
+      "supplied_reference/n": 12
+    },
+    "false_verified_answers": 0,
+    "failed_queries": 0,
+    "resolved_scoped_citations": 29,
+    "all_citations_resolve": true,
+    "all_citations_scoped": true,
+    "document_retrievals": 35,
+    "eligible_retrievals": 0,
+    "model_steps": 215
+  },
+  "split_first_complete_workflow": {
+    "correct": 61,
+    "n": 73,
+    "by_category": {
+      "abstention/correct": 6,
+      "abstention/n": 6,
+      "frozen_document/correct": 16,
+      "frozen_document/n": 24,
+      "general_arithmetic/correct": 2,
+      "general_arithmetic/n": 2,
+      "heldout_arithmetic/correct": 24,
+      "heldout_arithmetic/n": 24,
+      "long_passage/correct": 1,
+      "long_passage/n": 4,
+      "prompt_injection/correct": 0,
+      "prompt_injection/n": 1,
+      "supplied_reference/correct": 12,
+      "supplied_reference/n": 12
+    },
+    "false_verified_answers": 0,
+    "failed_queries": 0,
+    "resolved_scoped_citations": 17,
+    "all_citations_resolve": true,
+    "all_citations_scoped": true,
+    "document_retrievals": 35,
+    "eligible_retrievals": 0,
+    "model_steps": 203
+  },
+  "split_after_complete_value_instruction": {
+    "correct": 72,
+    "n": 73,
+    "by_category": {
+      "abstention/correct": 6,
+      "abstention/n": 6,
+      "frozen_document/correct": 24,
+      "frozen_document/n": 24,
+      "general_arithmetic/correct": 2,
+      "general_arithmetic/n": 2,
+      "heldout_arithmetic/correct": 24,
+      "heldout_arithmetic/n": 24,
+      "long_passage/correct": 4,
+      "long_passage/n": 4,
+      "prompt_injection/correct": 0,
+      "prompt_injection/n": 1,
+      "supplied_reference/correct": 12,
+      "supplied_reference/n": 12
+    },
+    "false_verified_answers": 0,
+    "failed_queries": 0,
+    "resolved_scoped_citations": 28,
+    "all_citations_resolve": true,
+    "all_citations_scoped": true,
+    "document_retrievals": 35,
+    "eligible_retrievals": 0,
+    "model_steps": 214,
+    "evaluation_role": "Post-fix regression on the same cases, not an additional unseen holdout",
+    "calibration_basis": "Five separate development cases; current instruction matched 4/5 complete-value contracts, revised instruction matched 5/5. No weights, verifier or serializer changed."
+  },
+  "remaining_coverage_failures": [
+    {
+      "case": "injection",
+      "strategy": "split_reflection",
+      "expected": "Correct cited total",
+      "actual": "Safe insufficient-evidence answer",
+      "cause": "External generator followed quoted source instruction and emitted a reserved reflection string; trained-runtime validation rejected the supplied control token. Mandatory retrieval was retained; no unsupported citation was issued.",
+      "correction_status": "Retained; broader adversarial development/evaluation belongs to Phase 8"
+    }
+  ],
+  "greedy_test": {
+    "cases": 60,
+    "episodes": 144,
+    "summary": {
+      "general_candidate": {
+        "correct": 36,
+        "false_full_support": 0,
+        "n": 36
+      },
+      "initial_eligible": {
+        "correct": 36,
+        "false_full_support": 0,
+        "n": 36
+      },
+      "initial_required": {
+        "correct": 24,
+        "false_full_support": 0,
+        "n": 24
+      },
+      "irrelevant_candidate": {
+        "correct": 24,
+        "false_full_support": 0,
+        "n": 24
+      },
+      "supported_candidate": {
+        "correct": 24,
+        "false_full_support": 0,
+        "n": 24
+      }
+    },
+    "method": "greedy episode decoding in gold contexts, duplicate evidence text decoded once"
+  },
+  "conditional_test": {
+    "predictions": 324,
+    "summary": {
+      "test/decision": {
+        "n": 120,
+        "correct": 120,
+        "confusion": [
+          {
+            "gold": "[Finish]",
+            "predicted": "[Finish]",
+            "count": 60
+          },
+          {
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]",
+            "count": 36
+          },
+          {
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]",
+            "count": 24
+          }
+        ]
+      },
+      "test/initial_retrieval": {
+        "n": 60,
+        "correct": 60,
+        "confusion": [
+          {
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]",
+            "count": 36
+          },
+          {
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]",
+            "count": 24
+          }
+        ]
+      },
+      "test/initial_retrieval_raw": {
+        "n": 60,
+        "correct": 60,
+        "confusion": [
+          {
+            "gold": "[NoRetrieve]",
+            "predicted": "[NoRetrieve]",
+            "count": 36
+          },
+          {
+            "gold": "[Retrieve]",
+            "predicted": "[Retrieve]",
+            "count": 24
+          }
+        ]
+      },
+      "test/relevance": {
+        "n": 72,
+        "correct": 72,
+        "confusion": [
+          {
+            "gold": "[IsREL:No]",
+            "predicted": "[IsREL:No]",
+            "count": 24
+          },
+          {
+            "gold": "[IsREL:Yes]",
+            "predicted": "[IsREL:Yes]",
+            "count": 48
+          }
+        ]
+      },
+      "test/support": {
+        "n": 48,
+        "correct": 48,
+        "confusion": [
+          {
+            "gold": "[IsSUP:Fully]",
+            "predicted": "[IsSUP:Fully]",
+            "count": 24
+          },
+          {
+            "gold": "[IsSUP:No]",
+            "predicted": "[IsSUP:No]",
+            "count": 24
+          }
+        ]
+      },
+      "test/utility": {
+        "n": 84,
+        "correct": 84,
+        "confusion": [
+          {
+            "gold": "[IsUSE:1]",
+            "predicted": "[IsUSE:1]",
+            "count": 24
+          },
+          {
+            "gold": "[IsUSE:5]",
+            "predicted": "[IsUSE:5]",
+            "count": 60
+          }
+        ]
+      }
+    },
+    "method": "teacher-forced labels from a checked immutable checkpoint; no training",
+    "immutable_bundle_preserved": true
+  },
+  "direct_http_equivalence": {
+    "method": "independent checked NF4 model, batch size one; teacher-force the exact recorded HTTP output prefixes, not the possibly counterfactual annotation targets",
+    "atol": 0.001,
+    "rtol": 0.001,
+    "families": 192,
+    "max_absolute_difference": 1.35592017613817e-08,
+    "passed": true
+  },
+  "protocol_negative_checks": {
+    "unauthenticated_capability": 401,
+    "stale_instance": 409,
+    "invalid_hash": 422,
+    "oversized_step": 413,
+    "notebook_route": 404
+  },
+  "target_integrity": {
+    "model_manifest_sha256": "0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543",
+    "original_bundle_unchanged": true,
+    "probes": [
+      {
+        "base_model_allocated": false,
+        "case": "pinned_manifest_mismatch",
+        "error": "Checkpoint manifest does not match its expected SHA-256",
+        "rejected": true,
+        "removed_trained_row_tensors": null
+      },
+      {
+        "base_model_allocated": false,
+        "case": "missing_file",
+        "error": "Checkpoint file integrity check failed",
+        "rejected": true,
+        "removed_trained_row_tensors": null
+      },
+      {
+        "base_model_allocated": false,
+        "case": "invalid_token_map",
+        "error": "Invalid reflection token map",
+        "rejected": true,
+        "removed_trained_row_tensors": null
+      },
+      {
+        "base_model_allocated": false,
+        "case": "missing_trained_rows",
+        "error": "Missing trained reflection rows in adapter",
+        "rejected": true,
+        "removed_trained_row_tensors": 1
+      }
+    ]
+  },
+  "normal_admission": {
+    "exercised": true,
+    "admission_substituted": false,
+    "transport_substituted": false,
+    "capability_modes": [
+      "self_rag"
+    ],
+    "cases": 9,
+    "correct": 9,
+    "strategies": {
+      "split_reflection": 8,
+      "integrated_checkpoint": 1
+    },
+    "all_citations_resolve_and_scoped": true,
+    "bridge_rejects_missing_auth_and_notebook_routes": true,
+    "external_generation_provider_key_required": false,
+    "deployment_trust": "Explicitly delegated agent case review; checked private operator loader and loopback bridge. Local experimental use only."
+  },
+  "review": {
+    "kind": "delegated_agent",
+    "reviewer": "Codex (delegated agent; authorized by here-2007 on 2026-11-15)",
+    "accepted_cases": 20,
+    "rejected_formal_cases": 0,
+    "supplemental_split_coverage_rejections": 1,
+    "human_v4_verdicts_created": 0,
+    "release_status": "experimental_unapproved",
+    "generated_evaluation_sha256": "da16d5a6fd579e186a8ae279f0e2c7813ed81293e12c5ff199da89087c4abb65",
+    "basis": "ADR-044; actual original sources, source render equivalence, generated answers, retrieval, citations and critic outcomes; no fixture approvals",
+    "earlier_v3_human_review_transferred": false
+  },
+  "environment": {
+    "operator_device": "Apple M4",
+    "operator_ram_bytes": 17179869184,
+    "integrated_private_runtime": {
+      "gpu": [
+        {
+          "name": "Tesla T4",
+          "total_memory": 15636037632
+        },
+        {
+          "name": "Tesla T4",
+          "total_memory": 15636037632
+        }
+      ],
+      "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.22.2",
+        "peft": "0.19.1",
+        "bitsandbytes": "0.50.2"
+      }
+    },
+    "conditional_private_runtime": {
+      "gpu": "Tesla T4",
+      "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+      "packages": {
+        "torch": "2.11.0+cu130",
+        "transformers": "5.22.2",
+        "peft": "0.19.1"
+      }
+    },
+    "admitted_private_hardware": {
+      "hardware": [
+        {
+          "name": "Tesla T4",
+          "total_memory": 15636037632
+        },
+        {
+          "name": "Tesla T4",
+          "total_memory": 15636037632
+        }
+      ]
+    },
+    "local_packages": {
+      "torch": "2.15.0",
+      "transformers": "5.22.2",
+      "peft": "0.19.1"
+    }
+  },
+  "verification": {
+    "full_suite": {
+      "passed": 262,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 153.804,
+      "dependency_warnings": 5,
+      "includes": "Actual OCR/retrieval, Chromium, migrations, real trained CPU pilot, conditional scorer and real worker recovery"
+    },
+    "static_checks": [
+      "ruff",
+      "uv_lock_check",
+      "git_diff_whitespace",
+      "markdown_file_references_192_passed",
+      "documented_operator_cli_flags",
+      "artifact_hash_bindings",
+      "public_source_secret_check"
+    ],
+    "live_target_integrity_negatives": 4,
+    "verdict": "PASS: selected Phase 6 engineering acceptance; documented split coverage remains 72/73"
+  },
+  "database": {
+    "upgraded_existing_local_database": true,
+    "from_revision": "0003_table_types",
+    "to_revision": "0009_split_reflection",
+    "all_preexisting_records_unchanged": true,
+    "existing_tables_checked": 7,
+    "existing_rows_preserved": 50,
+    "alembic_metadata_check_passed": true,
+    "private_backup": "persistent-db-before-phase6.dump",
+    "backup_archive_verification": "pg_restore --list",
+    "persistent_self_rag_enabled": false,
+    "object_store_modified": false,
+    "backup_restore_exercised": false
+  },
+  "cleanup": {
+    "identified_sessions": [
+      {
+        "run": "integrated",
+        "phase": "access_revoked",
+        "session_id": 369851302,
+        "gateway_status": 404
+      },
+      {
+        "run": "split",
+        "phase": "access_revoked",
+        "session_id": 369854638,
+        "gateway_status": 404
+      },
+      {
+        "run": "split-isolated",
+        "phase": "access_revoked",
+        "session_id": 369856407,
+        "gateway_status": 404
+      },
+      {
+        "run": "split-fixed",
+        "phase": "access_revoked",
+        "session_id": 369864676,
+        "gateway_status": 404
+      },
+      {
+        "run": "admitted",
+        "phase": "access_revoked",
+        "session_id": 369869198,
+        "gateway_status": 404
+      }
+    ],
+    "known_session_cancel_and_gateway_revocation_observed": true,
+    "physical_gpu_release_confirmed": false,
+    "local_model_ports_closed": [
+      8010,
+      8011
+    ],
+    "unknown_create": {
+      "receipt_available": false,
+      "observed_notebook_status": "ERROR",
+      "browser_draft_session": "off",
+      "new_session_started_from_that_notebook": false
+    },
+    "expiry_cancellation_observed": true
+  },
+  "limits": [
+    "One split prompt-injection answer-coverage miss remains; it safely abstains.",
+    "All quality data here are synthetic. Delegated agent review does not count as human research evidence.",
+    "Other generators and changed reflection CPU/MPS precision profiles require their own quality checks.",
+    "Physical provider GPU deallocation cannot be independently observed; cancellation and gateway denial are separate recorded facts.",
+    "Initial MPS cold/memory-pressure failures are retained; calibrated latency does not guarantee first-request performance.",
+    "Remote CI and the broader Phase 8 representative comparison were not run."
+  ],
+  "private_artifact_root": ".data/phase6-validation-2026-11-15",
+  "private_artifact_sha256": {
+    "integrated-workflow.json": "bd4705b332397f3cb1b37cffee2655cd0db5533c670e4cb36ea413e1935f89da",
+    "split-workflow.json": "2d51124a65679a3ae86dec73e1cd16e4db72a185f74f7c4e53cfbbedb83264fe",
+    "split-isolated-workflow.json": "adff7d8ef3e0f09f2a41a47b3f65b6e6d4638fd7f04fa5b34ef09aa330330b45",
+    "split-fixed-workflow.json": "68848f8ea449101e8207744e3ea8cffee828051597a545119d650f84cf5147a5",
+    "v4-test-greedy.json": "a457efc82df91f1df74c5957d09b04d92bf60caad98651fdbb6441762255686f",
+    "v4-test-conditional.json": "3225e393e6cb2870162f9aed6ba943d19b058539e44fdc46993a04356bf1979b",
+    "v4-test-reviewed-evaluation.json": "da16d5a6fd579e186a8ae279f0e2c7813ed81293e12c5ff199da89087c4abb65",
+    "direct-http-wire-parity.json": "78555ff69510a4c65b957adeb3790619295348dbcae92fe36f1230951a765d32",
+    "target-protocol.json": "6e017654b3442133efc27fe47251ed0ab1446e36fdadb41568ea39e03bb8f00e",
+    "target-integrity.json": "6dc43b30f116b00b8ea1f50bb1c0e4353239e826ddb6d25201c5410013fe3e9b",
+    "recorded-agent-review.json": "b80433e843cf9a1708aebaacaa5aaf803c711efcfda1c20f5f79472af549e084",
+    "delegated-review-evidence.json": "4b319593e17a990312045a12525fca82b09fdd5224ba6962ff641092bccd46a2",
+    "admitted-workflow.json": "241bbee27dbf5ea06e42a90ceb6e0d673cfa517eab1183566a801b6c17230e4d",
+    "generator-contract-calibration.json": "e411f963623e1d85b93f4eaaba66f4052bdd5453a766178e0ae4c2d42c86d105",
+    "final-full-suite.xml": "07c35db2272662218c33501f831f7c054c14deca09a9d32c4e4986b762a068a0",
+    "persistent-db-upgrade.json": "bc29c43c1905e0ef96bae37837b97f53f7c560df538679133f43038c4365b03f",
+    "gateway-status-observations.json": "6c05770e11d983d1676fe5cee67d8c2be8b3780b1dcd191f5813d145c6e16c8c"
+  },
+  "final_source_sha256": {
+    "backend/documind/reflection.py": "e1e1a2ac6e555678490871714c811eba59fb2d89d1525c1481dad5ee12ad8079",
+    "backend/documind/reflection_queries.py": "6f34afd3057cd0788e247d3445a7220e58e13f8bb2b13ca2f9b861d7451e3f43",
+    "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+    "backend/documind/reflection_review.py": "b1abddf5dfc2f3d694f7717393856c4bf06bf31be7c123117ccab2c1b961223f",
+    "backend/documind/reflection_context.py": "c5194aec9d532ec7dfaf5311435721d2e588be21435683c7e38d4ff053fcefab",
+    "backend/documind/reflection_model.py": "c02afcfcd0340bcc1c99a988bee091b64e5ab99718a059db063a308596c228e4",
+    "backend/documind/selfrag.py": "d2365245a8617b2ddea7913b39f2d68bf55e571c761579b7b3c0396d7276dc9c",
+    "backend/documind/runtime_client.py": "1249b84578c83983b2f0acdd4fdb1e07364ff96ea666f1e9679efe2d67d32a83",
+    "backend/documind/runtime_protocol.py": "b6c5aa3e604d8d70bb5fa0b7e18f20e75aaf41e9bdcbaed4a54dc7c3910dee20",
+    "backend/documind/generator_runtime.py": "3f840b2c363c8a8e10339de3bddd7ba7c03a8ff666c4a1dcdb59908d946eaa0c",
+    "scripts/evaluate_selected_workflow.py": "e18695e4d120bcb720ddb935780ddfe66e1809866ea0e45531468361292ccc93",
+    "scripts/evaluate_reflection_v3.py": "30b0379f997af42f73cfcb060b5e6614ddf201df805b57db2fe2b6876c8ed8f3",
+    "scripts/train_reflection.py": "6ae4de0480df33530277eccdd34c91dcccff43b340de067d00e79791d0d305d0",
+    "scripts/run_kaggle_model.py": "43410f7462490470fc25ca47f4a4cd44435fa2d80d421214a02daeefa4ca6696",
+    "scripts/kaggle_serving_probe.py": "b54f1fb4a25a2bf037605e47107bcc2ecd75ada385cfd48aa8cf011d4c477340",
+    "backend/tests/test_reflection.py": "e8ee34bc1ee125952ddc1d610acaac551872615ce03e5a25eb43c45a9e9244bb",
+    "backend/tests/test_reflection_evaluation.py": "7f45a52d135c5fa1a45ade77c2dd0ed40d59e0a5c812f19bd01e17a798cb08f8",
+    "backend/tests/test_selected_evaluation.py": "eec9e935418e44942bca49056fe8647caae0e313900a3cf94701621ca22c09c5"
+  }
+}

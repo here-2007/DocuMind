@@ -1,4 +1,3 @@
-import hashlib
 import logging
 from uuid import UUID
 
@@ -25,10 +24,10 @@ celery.conf.update(
     task_reject_on_worker_lost=True,
     broker_connection_retry_on_startup=True,
     broker_transport_options={
-        "visibility_timeout": 300,
+        "visibility_timeout": 600,
         "global_keyprefix": cfg.celery_queue + ":",
     },
-    task_time_limit=cfg.parser_timeout_seconds + 90,
+    task_time_limit=max(cfg.parser_timeout_seconds + 90, cfg.query_timeout_seconds + 15, 540),
     broker_connection_timeout=3,
     broker_connection_max_retries=0,
     task_publish_retry=False,
@@ -42,6 +41,27 @@ def process_job(job_id: UUID):
     if not job:
         return
     try:
+        if job["kind"] == "publication":
+            from documind.publications import build_publication
+
+            build_publication(repo, job)
+            return
+        if job["kind"] == "query":
+            from documind.queries import process_query
+
+            process_query(repo, job)
+            return
+        if job["kind"] == "validate":
+            from documind.connections import validate_job
+
+            validate_job(repo, job)
+            return
+        if job["kind"] in {"comparison", "report"}:
+            from documind.investigations import process_comparison, process_report
+
+            operation = process_comparison if job["kind"] == "comparison" else process_report
+            operation(repo, job)
+            return
         if job["kind"] == "delete":
             repo.cleanup_document(job)
             return
@@ -64,9 +84,9 @@ def process_job(job_id: UUID):
             return
         if version["parser_version"] != PARSER_VERSION:
             raise AppError("PARSER_VERSION_UNAVAILABLE", 409)
-        data = store().get(job["object_key"], settings().max_upload_bytes)
-        if hashlib.sha256(data).hexdigest() != job["sha256"]:
-            raise AppError("SOURCE_HASH_MISMATCH", 422)
+        data = repo.objects.read_source(
+            job["object_key"], size=job["original_size_bytes"], sha256=job["sha256"]
+        )
         parsed = extract_pdf(
             data,
             version["config_json"],
@@ -76,11 +96,14 @@ def process_job(job_id: UUID):
         repo.promote(job, parsed)
     except AppError as exc:
         if exc.code != "LEASE_LOST":
-            repo.fail(job, exc.code, permanent=True)
+            retryable = exc.code == "PUBLICATION_BUSY" or (
+                job["kind"] in {"delete", "publication"} and exc.code == "DENSE_INDEX_UNAVAILABLE"
+            )
+            repo.fail(job, exc.code, permanent=not retryable)
     except Exception:
         # Driver/parser exception strings may contain private data or credentials.
         logger.error('{"event":"job_attempt_failed","job_id":"%s"}', job_id)
-        repo.fail(job, "DEPENDENCY_UNAVAILABLE")
+        repo.fail(job, "DEPENDENCY_UNAVAILABLE", permanent=job["kind"] in {"query", "validate"})
 
 
 @celery.task(name="documind.process_job")
@@ -92,6 +115,8 @@ def dispatch_once() -> int:
     repo = Repository(engine(), store(), settings())
     count = 0
     for job_id in repo.due_jobs():
+        if not repo.reserve_dispatch(job_id):
+            continue
         try:
             ingest.apply_async(args=[str(job_id)])
             count += 1

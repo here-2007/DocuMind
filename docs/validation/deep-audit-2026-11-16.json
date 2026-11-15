@@ -1,0 +1,243 @@
+{
+  "recorded_at": "2026-11-16T00:52:23+05:30",
+  "scope": "Whole local application through Phase 8, threat/recovery/evaluation audit",
+  "findings": [
+    {
+      "id": 1,
+      "priority": "P1",
+      "title": "Qdrant unauthenticated and permissive cross-origin access",
+      "source": "compose.yaml",
+      "line": 26,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 2,
+      "priority": "P1",
+      "title": "Late ingestion write recreates render after successful deletion",
+      "source": "backend/documind/repository.py",
+      "line": 718,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 3,
+      "priority": "P2",
+      "title": "Transport timeout leaves reflection runtime step uncancelled",
+      "source": "backend/documind/reflection_queries.py",
+      "line": 230,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 4,
+      "priority": "P2",
+      "title": "Guardian normal exit leaves descendant past expiry",
+      "source": "backend/documind/runtime_lifetime.py",
+      "line": 10,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 5,
+      "priority": "P2",
+      "title": "Stale schema advertises native readiness",
+      "source": "backend/documind/api.py",
+      "line": 154,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 6,
+      "priority": "P2",
+      "title": "Deletion index lock waits past job lease",
+      "source": "backend/documind/publications.py",
+      "line": 144,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 7,
+      "priority": "P2",
+      "title": "Lost connection receipt creates duplicate destinations",
+      "source": "frontend/components/connections.tsx",
+      "line": 33,
+      "evidence_kind": "Chromium reproduction with synthetic upstream"
+    },
+    {
+      "id": 8,
+      "priority": "P2",
+      "title": "Missing QA arms pass complete report gate",
+      "source": "scripts/phase8_report.py",
+      "line": 114,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 9,
+      "priority": "P2",
+      "title": "Missing model profile and invalid source hashes admitted",
+      "source": "scripts/phase8_report.py",
+      "line": 93,
+      "evidence_kind": "reproduced"
+    },
+    {
+      "id": 10,
+      "priority": "P2",
+      "title": "Forty retrieval questions lose required source scope",
+      "source": "scripts/evaluate_phase8.py",
+      "line": 136,
+      "evidence_kind": "source and frozen manifest verification"
+    },
+    {
+      "id": 11,
+      "priority": "P2",
+      "title": "Raw candidate field omits 64 generated outputs",
+      "source": "scripts/evaluate_phase8.py",
+      "line": 460,
+      "evidence_kind": "saved wire verification"
+    },
+    {
+      "id": 12,
+      "priority": "P2",
+      "title": "Host parser inherits operator environment without host resource isolation",
+      "source": "backend/documind/parser.py",
+      "line": 306,
+      "evidence_kind": "configuration and synthetic environment probe; no PDF exploit"
+    },
+    {
+      "id": 13,
+      "priority": "P2",
+      "title": "Kaggle creation cleanup remains unconfirmed",
+      "source": "backend/documind/kaggle_session.py",
+      "line": 185,
+      "evidence_kind": "retained state rechecked; no new allocation"
+    },
+    {
+      "id": 14,
+      "priority": "P2",
+      "title": "Two unique dependency advisories",
+      "source": "pyproject.toml",
+      "line": 32,
+      "evidence_kind": "fresh scan and advisory record check"
+    },
+    {
+      "id": 15,
+      "priority": "P2",
+      "title": "Published branch remains at Phase 1B",
+      "source": "PROGRESS.md",
+      "line": 21,
+      "evidence_kind": "local and remote Git verification"
+    }
+  ],
+  "verification": {
+    "suite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "297",
+      "time": "165.293",
+      "timestamp": "2026-11-16T00:30:01.874418+05:30",
+      "hostname": "Pernavs-MacBook-Air.local"
+    },
+    "probe_suite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "8",
+      "time": "8.186",
+      "timestamp": "2026-11-16T00:52:14.093569+05:30",
+      "hostname": "Pernavs-MacBook-Air.local"
+    },
+    "frontend_typecheck": "passed",
+    "frontend_build": "passed",
+    "ruff": "passed",
+    "uv_lock_check": "passed",
+    "whitespace": "passed",
+    "npm_production_advisories": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "unique_python_advisories": [
+      {
+        "package": "accelerate",
+        "version": "1.13.0",
+        "id": "PYSEC-2026-3804",
+        "aliases": [
+          "GHSA-4j2p-28q2-5m79",
+          "CVE-2026-69112"
+        ],
+        "fix_versions": []
+      },
+      {
+        "package": "pytest",
+        "version": "8.4.2",
+        "id": "PYSEC-2026-1845",
+        "aliases": [
+          "CVE-2025-71176",
+          "GHSA-6w46-j5rx-g56g"
+        ],
+        "fix_versions": [
+          "9.0.3"
+        ]
+      }
+    ],
+    "persistent_db_revision": "0009_split_reflection"
+  },
+  "additional_limits": {
+    "stalled_dns_slots": 4,
+    "restored_directory_mode": "0755, originals remain 0600",
+    "broader_human_research_review": "pending"
+  },
+  "local_head": "a7a9a7b7db59d922ae036c6cc270b0039c5dad51",
+  "verified_remote_main": "a7a9a7b7db59d922ae036c6cc270b0039c5dad51",
+  "application_source_sha256": {
+    "PROGRESS.md": "57401383a76916bf1a3499633bf9abf5575bfb84aae56b87982b68d4bc93229d",
+    "backend/documind/api.py": "277f7227b44ba7300b96ec603f9239bcd67a201e901cb4ff6d83e4952fa5346a",
+    "backend/documind/chat.py": "3dbefee7a108e7611962b64925f5acfa0ab7a2589c7e04790e55e344225824cf",
+    "backend/documind/kaggle_session.py": "40e035d26aaf5df1cda57ceeffd72f648e1b069f1cf61de782b87817167019e2",
+    "backend/documind/parser.py": "44a889ee25b6286a002e35bb5238714025c1018cae548b4181f15070d647d492",
+    "backend/documind/publications.py": "0276f20fcb357b9240dbfc72985fa86fb465cd8f34d43f7af637d81e5a20c2c4",
+    "backend/documind/queries.py": "ffc1221705b8c54c916b47482c33d177b9b8a2b6a5a547cbbd6c99e0cf81b194",
+    "backend/documind/reflection_queries.py": "6f34afd3057cd0788e247d3445a7220e58e13f8bb2b13ca2f9b861d7451e3f43",
+    "backend/documind/repository.py": "f4a3aac0dd51f990f9a3f3cd531753acc537c16aa6131a4503216ec142366568",
+    "backend/documind/runtime_lifetime.py": "d817618bc387832eb269f9dc09f1370f0c129dda0aed2c17aa13a075cae6a752",
+    "backend/documind/runtime_protocol.py": "b6c5aa3e604d8d70bb5fa0b7e18f20e75aaf41e9bdcbaed4a54dc7c3910dee20",
+    "backend/documind/storage.py": "90e6d3ac6b51d1f3a6bbcd5a6ac20ded6b384be0ec6de2f35d7a82262972ec8c",
+    "backend/documind/worker.py": "49970a1bc4abe387f4608d020736c5ce0931d0ddb575c81ce3b854749880e336",
+    "compose.yaml": "16cdcc9a6fd4b4e36b34b8e3801e148f6ec58630e50d166980d02e3b545a3dee",
+    "frontend/app/api/v1/[...segments]/route.ts": "de6e084c115b7b22697c6b4352b91ac1c35df0e12c692d3f94fbd3e8c6737e3d",
+    "frontend/components/connections.tsx": "fc80360735e34711c52858534be0c64cfbf2dd7308dbdb26e9ea95e459791cd9",
+    "pyproject.toml": "1b35b52eeb5fa8b44c992760c11d7e070875f4b23d24fbbc3c645999e6e719c5",
+    "scripts/evaluate_phase8.py": "81e5c73b101f9bab641482902e03b886c2594c194a5a400df2b3639829c958b0",
+    "scripts/phase8_dataset.py": "7a7a72534b615bb9c16e29a85ebb42754b37f650d39a4c887536854f741af943",
+    "scripts/phase8_gpu.py": "08e5e6e365fcb6d2b36b9292cba13fd5a45d29ccb787ba412f108086c1802218",
+    "scripts/phase8_report.py": "8e5e179accb58ac7be00d1790de2afc6d469b3627c8470402ffdfc4223f4c357"
+  },
+  "private_evidence_directory": ".data/deep-audit-2026-11-16",
+  "private_evidence_sha256": {
+    "full-suite.xml": "7af3db6b87980212fdeb710319e312e955a5448f771eb99051987545b821d2e3",
+    "full-suite.log": "52810f3b9b88593788172ae1c1759338248e5572449c30d0762cd95e7abbe786",
+    "probes-final2.xml": "cb9e7f39572c5163a77b4b7d528b7580efc425daa7d68b1eb6d6e6687b7c3b72",
+    "probes-final2.log": "c10881670b96b5724f82d302dd8497bb745424e5496d6cc660f0c62bb6b91a6c",
+    "probe_tests.py": "b1d60d8ca764dfa5c505202f32cef85f09059e5bdfb481b5f1ca79d104d55d5d",
+    "browser_probe.cjs": "aa78b6eb92e5ce3453c62509924954eae1a60172220870cb840c0dcae78f9a4e",
+    "browser-receipt-probe.json": "654598769488525cba88ad41d12fcaefd7f25b6ac8426e5f1026a7324eb8d04d",
+    "research_probes.py": "cfff3a95232b604146342f68853d865ca82ef0f0955fe020a2b39fa8964963f6",
+    "research-probes.json": "37662a09694a86eaf0b146e184f135ec30e4dedb17d9cdf53d59a1c54ef88387",
+    "raw-candidates-missing.json": "25e549d3adfcbb7e7feb4cc6ee6968414a31dafbc2624d14566925624a553a1f",
+    "qdrant-boundary.json": "8234aedf94af55165756020ee193cbd3faf78c91b4aaa47c732f0732e304bfe3",
+    "python-audit.json": "c88f0f54f07e55d0bff11634006be8dca1aff16970aefb83d24de6f4827fec0b",
+    "npm-audit.json": "8d33810f986a4294195df53926af98f76b3c0da85693a1b4f84130bb52c736a1",
+    "frontend-build.log": "7186d43fa3525634092254fc7af0d7aed35c9b0f7bf8f5f4d2960ccf0d6a5d9b",
+    "credential-scan.json": "ca76daf9dee1c07f07ad79942eb75b9f7fbb50376f56b79e0d1b9d69d4ce5ea0",
+    "accepted-incomplete-report/report.json": "1ee1d6331fe762361e89c8087ba295721a6c7c84b49c69d60c3b645e2d481cdf"
+  },
+  "limitations": [
+    "No new GPU allocation or training",
+    "No PDF code-execution exploit",
+    "Container OS advisory scan unrun",
+    "No complete dependency source-code review",
+    "No representative public-data or human evaluation",
+    "Physical provider GPU release remains unobservable"
+  ]
+}

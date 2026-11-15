@@ -6,7 +6,7 @@
 
 | PDF page | Original requirement | DocuMind commitment |
 |---|---|---|
-| 1-3 | Fine-tune Llama 3.2 3B Instruct with 4-bit QLoRA | Keep as research model target |
+| 1-3 | Fine-tune Llama 3.2 3B Instruct with 4-bit QLoRA | Use Qwen3-4B-Instruct-2507 and retain the 4-bit QLoRA method (D22) |
 | 2-3 | Reflection families `[Retrieve]`, `[IsREL]`, `[IsSUP]`, `[IsUSE]` | Keep categories; define categorical labels / tokenizer mapping before training |
 | 2,4 | Qdrant dense + BM25, RRF, cross encoder | Keep ranking stack |
 | 2,4 | `all-MiniLM-L6-v2` / `rank_bm25` / `ms-marco-MiniLM-L6-v2` | Replace dense embedder with EmbeddingGemma 2; retain BM25 and cross encoder (D20) |
@@ -32,7 +32,7 @@
 | D10 | Build order and duration | Training first, 6 weeks (pp. 3-5) | **Baseline ingestion + retrieval first**, independent product/research gates; 16-week estimate is optional context | De-risks project by proving data quality and evidence paths before expensive training; not a PDF requirement |
 | D11 | Evaluation | 200 QA + four central metrics (pp. 4-6) | Keep baseline and add OCR/table/field/citation/discrepancy/ranking evaluations and ablations | Must show actual document understanding and compare both model and non-model components |
 | D12 | Retrieval skipping | Model decides whether to retrieve (pp. 1-4) | **Policy forces retrieval** for private/document-specific claims; skip decisions tested on eligible general or self-contained queries | Safety and evidence correctness take precedence over skip-rate optimization |
-| D13 | Deployment | Streamlit on Hugging Face Spaces; Kaggle T4 training estimate (pp. 4-5) | Docker Compose local development; managed Kaggle or custom inference endpoint (D21) | Source deployment does not cover app stores/jobs or provider lifecycle; platform permission, hosting and capacity remain validation gates |
+| D13 | Deployment | Streamlit on Hugging Face Spaces and Kaggle T4 estimate | Local-only app and stores, with optional external model compute under D25 | Removes app hosting. Retains model lifecycle, privacy and device checks |
 | D14 | Security | No detailed threat model | Workspace isolation, prompt-injection handling, upload validation, confidentiality policy, audit | Document uploads may contain sensitive personal/business data |
 | D15 | Data generation | ~5K GATE/UPSC passage-QA pairs with model critic annotation (p. 3) | Domain specific annotation + labeled no-retrieval/irrelevant/unsupported/cross-doc examples; seed volume **target**, not guaranteed | Original annotations are not directly suitable for DocuMind tasks |
 | D16 | Token definition | Four token names mentioned but no complete formal grammar (pp. 2-4) | Freeze project-specific token IDs/label grammar and validate vs paper before training | Prevents a nonfunctional token loop or incorrect claims of exact paper replication |
@@ -40,7 +40,11 @@
 | D18 | Training/inference protocol | Token families and branching sketch | selfrag-v1 adds Continue, Finish and EndSegment, mandatory masks, bounded candidates, critic-v1 scores and independent support checks; serial greedy selection | A declared trained Self-RAG-inspired adaptation, not exact paper beam-search reproduction; ADR-016 |
 | D19 | Execution/release contract | Demo streaming and training-first release | Durable query creation plus GET event replay; product ships independently of research | Crash/reconnect semantics and useful baseline releases; ADR-017/018 |
 | D20 | Embedding model | all-MiniLM-L6-v2 | User-selected `google/embeddinggemma-2`, text-only, normalized 768-dimensional vectors; hybrid-v3 uses reranker-tokenized 240/64 chunks and an 8192-token dense ceiling | New prompts, tokenizer checks and isolated index identity; reranker and Llama generator retained; no measured quality claim; ADR-020 |
-| D21 | Inference deployment | Kaggle training estimate and demo deployment; no provider connection contract | Managed user Kaggle or custom endpoint; ordinary endpoints use baseline, admitted complete trained runtimes use Self-RAG; fully local runtime needs no external key | Fixed release bundle, API serving, scoped credentials and explicit connection changes; no automatic local critic or provider downgrade; ADR-021 |
+| D22 | Research generator | Gated Meta Llama 3.2 3B Instruct | User-authorized `Qwen/Qwen3-4B-Instruct-2507` at the revision in ADR-031 | Open download and different tokenizer, model and adapter identity. Controlled naive and trained comparisons must share the Qwen base. Earlier artifacts retain their original provenance |
+| D21 | Inference placement | Kaggle training estimate and demo deployment | D25 and ADR-042 supersede the earlier combined connection design. Reflection and generation have independent placement | Fixed bundles, local credentials and explicit selection are retained |
+| D23 | Unsupported candidate training | No explicit loss-mask rule for negative answer words | Mask ordinary answer loss for No/Partially-supported candidates and retain critic supervision under ADR-034 | Prevents the generator learning to imitate controlled errors. Synthetic-v3 and the new training-policy identity distinguish later experiments |
+| D24 | Distant document fields and self-contained addition | Passage-conditioned candidates and open-domain evaluation sketch | Pair exact identity and field excerpts from one pinned paragraph when a single window cannot preserve both. Train eligible addition trajectories and check generated sums with integer arithmetic | Preserves original citations and separates trained skip/answer quality from independent numerical correctness. See ADR-041 |
+| D25 | Local-only app and independent model roles | Streamlit/Spaces demo and one fine-tuned generator | The app and stores run locally. Reflection runs on the device or private Kaggle. Generation independently uses the device, Kaggle or an endpoint/key. The trained critic scores the exact external candidate | Adds an explicit split strategy alongside integrated research inference. Removes application hosting and public account management. ADR-042 supersedes D13/D21 placement and the earlier restriction on a separate critic |
 
 ## 3. Implementation details **proposed**, not specified by original PDF
 
@@ -76,3 +80,11 @@ ADR-022 implements the local native slice using PyMuPDF, PostgreSQL/Alembic, lea
 ## Phase 1B implementation refinement
 
 ADR-024 implements the D02 OCR/table extension for PDFs with local PaddleOCR and bounded PyMuPDF/OpenCV ruled-table adapters. Docling/general layout, cross-page table linking and additional upload formats remain deferred. Human review creates new source versions; it does not overwrite the original. These are DocuMind additions, not inherited PDF behavior or measured general accuracy.
+
+## Local experimental validation refinement (2026-11-15)
+
+ADR-043 keeps a selected bundle immutable while adding separately bound post-selection conditional scores to its generated-output review evidence. ADR-044 records the user's explicit delegation of this Phase 6 operator review to Codex. Agent adjudication is identified as such and does not count as human evaluation, human-verified annotations or paper reproduction. The earlier v3 human review remains separate. Model weights, reflection-token grammar, source verification and the research evaluation requirements are preserved.
+
+## Phase 8 evaluation scope
+
+ADR-047 pairs the same pinned Qwen base and v4 checkpoint under the declared 512-token context and 128-token output budget. The 200-case broader synthetic benchmark was frozen after checkpoint selection. The existing pre-training holdout has 60 questions and is reported separately. This preserves the observed data chronology. It leaves the original 200-question pre-training holdout and broader human evaluation as future research requirements. The support ablation measures acceptance and scoring with the same weights and independent verifier. Exact-prefix reuse excludes a latency comparison for that arm.

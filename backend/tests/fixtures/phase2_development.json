@@ -1,0 +1,302 @@
+{
+  "revision": "phase2-synthetic-dev-v1",
+  "documents": [
+    {
+      "group": "DEV-vendor-001",
+      "invoice": "DEV-INV-001",
+      "text": "Invoice number: DEV-INV-001\nGrand total: USD 1,111.00\nInvoice date: 2026-10-01\nDue date: 2026-11-01\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-001?",
+          "expected_quote": "Grand total: USD 1,111.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-001?",
+          "expected_quote": "Invoice number: DEV-INV-001"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-001?",
+          "expected_quote": "Invoice date: 2026-10-01"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-001?",
+          "expected_quote": "Due date: 2026-11-01"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-001?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-002",
+      "invoice": "DEV-INV-002",
+      "text": "Invoice number: DEV-INV-002\nGrand total: USD 1,222.00\nInvoice date: 2026-10-02\nDue date: 2026-11-02\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-002?",
+          "expected_quote": "Grand total: USD 1,222.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-002?",
+          "expected_quote": "Invoice number: DEV-INV-002"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-002?",
+          "expected_quote": "Invoice date: 2026-10-02"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-002?",
+          "expected_quote": "Due date: 2026-11-02"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-002?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-003",
+      "invoice": "DEV-INV-003",
+      "text": "Invoice number: DEV-INV-003\nGrand total: USD 1,333.00\nInvoice date: 2026-10-03\nDue date: 2026-11-03\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-003?",
+          "expected_quote": "Grand total: USD 1,333.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-003?",
+          "expected_quote": "Invoice number: DEV-INV-003"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-003?",
+          "expected_quote": "Invoice date: 2026-10-03"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-003?",
+          "expected_quote": "Due date: 2026-11-03"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-003?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-004",
+      "invoice": "DEV-INV-004",
+      "text": "Invoice number: DEV-INV-004\nGrand total: USD 1,444.00\nInvoice date: 2026-10-04\nDue date: 2026-11-04\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-004?",
+          "expected_quote": "Grand total: USD 1,444.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-004?",
+          "expected_quote": "Invoice number: DEV-INV-004"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-004?",
+          "expected_quote": "Invoice date: 2026-10-04"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-004?",
+          "expected_quote": "Due date: 2026-11-04"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-004?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-005",
+      "invoice": "DEV-INV-005",
+      "text": "Invoice number: DEV-INV-005\nGrand total: USD 1,555.00\nInvoice date: 2026-10-05\nDue date: 2026-11-05\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-005?",
+          "expected_quote": "Grand total: USD 1,555.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-005?",
+          "expected_quote": "Invoice number: DEV-INV-005"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-005?",
+          "expected_quote": "Invoice date: 2026-10-05"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-005?",
+          "expected_quote": "Due date: 2026-11-05"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-005?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-006",
+      "invoice": "DEV-INV-006",
+      "text": "Invoice number: DEV-INV-006\nGrand total: USD 1,666.00\nInvoice date: 2026-10-06\nDue date: 2026-11-06\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-006?",
+          "expected_quote": "Grand total: USD 1,666.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-006?",
+          "expected_quote": "Invoice number: DEV-INV-006"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-006?",
+          "expected_quote": "Invoice date: 2026-10-06"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-006?",
+          "expected_quote": "Due date: 2026-11-06"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-006?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-007",
+      "invoice": "DEV-INV-007",
+      "text": "Invoice number: DEV-INV-007\nGrand total: USD 1,777.00\nInvoice date: 2026-10-07\nDue date: 2026-11-07\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-007?",
+          "expected_quote": "Grand total: USD 1,777.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-007?",
+          "expected_quote": "Invoice number: DEV-INV-007"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-007?",
+          "expected_quote": "Invoice date: 2026-10-07"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-007?",
+          "expected_quote": "Due date: 2026-11-07"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-007?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-008",
+      "invoice": "DEV-INV-008",
+      "text": "Invoice number: DEV-INV-008\nGrand total: USD 1,888.00\nInvoice date: 2026-10-08\nDue date: 2026-11-08\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-008?",
+          "expected_quote": "Grand total: USD 1,888.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-008?",
+          "expected_quote": "Invoice number: DEV-INV-008"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-008?",
+          "expected_quote": "Invoice date: 2026-10-08"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-008?",
+          "expected_quote": "Due date: 2026-11-08"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-008?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-009",
+      "invoice": "DEV-INV-009",
+      "text": "Invoice number: DEV-INV-009\nGrand total: USD 1,999.00\nInvoice date: 2026-10-09\nDue date: 2026-11-09\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-009?",
+          "expected_quote": "Grand total: USD 1,999.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-009?",
+          "expected_quote": "Invoice number: DEV-INV-009"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-009?",
+          "expected_quote": "Invoice date: 2026-10-09"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-009?",
+          "expected_quote": "Due date: 2026-11-09"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-009?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    },
+    {
+      "group": "DEV-vendor-010",
+      "invoice": "DEV-INV-010",
+      "text": "Invoice number: DEV-INV-010\nGrand total: USD 2,110.00\nInvoice date: 2026-10-10\nDue date: 2026-11-10\nCurrency: USD",
+      "questions": [
+        {
+          "question": "What is the full billed amount on invoice DEV-INV-010?",
+          "expected_quote": "Grand total: USD 2,110.00"
+        },
+        {
+          "question": "What is the invoice number on invoice DEV-INV-010?",
+          "expected_quote": "Invoice number: DEV-INV-010"
+        },
+        {
+          "question": "When was the invoice issued for invoice DEV-INV-010?",
+          "expected_quote": "Invoice date: 2026-10-10"
+        },
+        {
+          "question": "When is payment due on invoice DEV-INV-010?",
+          "expected_quote": "Due date: 2026-11-10"
+        },
+        {
+          "question": "What currency is used on invoice DEV-INV-010?",
+          "expected_quote": "Currency: USD"
+        }
+      ]
+    }
+  ],
+  "negative_questions": [
+    {
+      "question": "Was invoice DEV-INV-001 approved?",
+      "document": "DEV-INV-001",
+      "reason": "unsupported claim"
+    },
+    {
+      "question": "What is the amount due on invoice DEV-INV-001?",
+      "document": "DEV-INV-001",
+      "reason": "total is the wrong field"
+    },
+    {
+      "question": "What is the total on invoice DEV-INV-002?",
+      "document": "DEV-INV-001",
+      "reason": "wrong document"
+    },
+    {
+      "question": "What is the total on invoice DEV-INV-999?",
+      "document": "DEV-INV-001",
+      "reason": "missing invoice"
+    },
+    {
+      "question": "What is the total and is invoice DEV-INV-001 approved?",
+      "document": "DEV-INV-001",
+      "reason": "compound unsupported request"
+    }
+  ]
+}

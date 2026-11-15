@@ -1,0 +1,173 @@
+{
+  "recorded_at": "2026-11-15T20:27:28+05:30",
+  "scope": "Findings 1–12 of audit-through-phase7-2026-11-15.md, applied to the local working tree",
+  "findings": [
+    {
+      "id": 1,
+      "fix": "Original PDF digest",
+      "regressions": [
+        "test_accepted_artifact_and_replay_survive_lower_upload_limit"
+      ]
+    },
+    {
+      "id": 2,
+      "fix": "Deletion retry and quota recovery",
+      "regressions": [
+        "test_delete_retries_transient_index_failure_and_exposes_exhaustion",
+        "test_next_workspace_in_browser"
+      ]
+    },
+    {
+      "id": 3,
+      "fix": "Atomic send reservation and expired-send recovery",
+      "regressions": [
+        "test_concurrent_dispatchers_reserve_once_and_resend_after_expiry",
+        "test_broker_outage_keeps_durable_work"
+      ]
+    },
+    {
+      "id": 4,
+      "fix": "Accepted original, replay and worker read after lower upload limit",
+      "regressions": [
+        "test_accepted_artifact_and_replay_survive_lower_upload_limit"
+      ]
+    },
+    {
+      "id": 5,
+      "fix": "One comparison after lost create receipt and failed detail fetch",
+      "regressions": [
+        "test_next_workspace_in_browser"
+      ]
+    },
+    {
+      "id": 6,
+      "fix": "Temporary local generator busy preserves readiness",
+      "regressions": [
+        "test_temporary_local_generator_busy_preserves_ready_connection"
+      ]
+    },
+    {
+      "id": 7,
+      "fix": "Readiness requires configured workspace",
+      "regressions": [
+        "test_readiness_requires_the_configured_workspace"
+      ]
+    },
+    {
+      "id": 8,
+      "fix": "Missing and changed preview return typed errors",
+      "regressions": [
+        "test_unavailable_or_corrupt_preview_has_typed_error"
+      ]
+    },
+    {
+      "id": 9,
+      "fix": "Conditional probability and winner validation",
+      "regressions": [
+        "test_validation_selected_bundle_requires_bound_complete_test_scores"
+      ]
+    },
+    {
+      "id": 10,
+      "fix": "Exact general reference check",
+      "regressions": [
+        "test_general_reference_checks_exact_value_without_retrieval"
+      ]
+    },
+    {
+      "id": 11,
+      "fix": "DNS bounded by request deadline",
+      "regressions": [
+        "test_dns_wait_is_bounded"
+      ]
+    },
+    {
+      "id": 12,
+      "fix": "Bounded Kaggle cancellation retry for exact session",
+      "regressions": [
+        "test_watcher_retries_transient_failure_with_a_bound"
+      ]
+    }
+  ],
+  "verification": {
+    "pytest": {
+      "passed": 284,
+      "failed": 0,
+      "skipped": 0,
+      "warnings": 5,
+      "time_seconds": 183.619,
+      "profiles": [
+        "OCR",
+        "pinned retrieval",
+        "local chat model",
+        "trained CPU pilot",
+        "workspace Chromium",
+        "Phase 7 Chromium"
+      ]
+    },
+    "ruff": "passed",
+    "frontend_typecheck_and_production_build": "passed",
+    "uv_lock_check_offline": "passed",
+    "migration": {
+      "head": "0010_artifacts_dispatch",
+      "checks": [
+        "clean migration and Alembic schema comparison",
+        "populated 0004_phase2 upgrade preserves published survivor"
+      ],
+      "persistent_database_revision": "0009_split_reflection"
+    },
+    "isolated_native_compose_smoke": "passed; disposable resources removed",
+    "frozen_v4_review_compatibility": {
+      "bundle_sha256": "0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543",
+      "corpus_sha256": "0f3864f7040332dbeefd6d5bdd7dc82685bcadf513d74c67617e897f13321beb",
+      "generated_evaluation_sha256": "da16d5a6fd579e186a8ae279f0e2c7813ed81293e12c5ff199da89087c4abb65",
+      "recorded_review_sha256": "b80433e843cf9a1708aebaacaa5aaf803c711efcfda1c20f5f79472af549e084",
+      "heldout_cases": 60,
+      "conditional_scores": 324,
+      "recorded_verdicts": 20,
+      "release_status": "experimental_unapproved"
+    }
+  },
+  "unrun": [
+    "live Kaggle cancellation and GPU validation",
+    "target MPS validation",
+    "fresh weight download",
+    "remote checkout and CI"
+  ],
+  "source_and_test_sha256": {
+    "backend/documind/api.py": "277f7227b44ba7300b96ec603f9239bcd67a201e901cb4ff6d83e4952fa5346a",
+    "backend/documind/chat.py": "3dbefee7a108e7611962b64925f5acfa0ab7a2589c7e04790e55e344225824cf",
+    "backend/documind/reflection_review.py": "64fb49686c4f3edfcb1054afa8f1760fbce278885f30af483e0a132861deb9b7",
+    "backend/documind/repository.py": "f4a3aac0dd51f990f9a3f3cd531753acc537c16aa6131a4503216ec142366568",
+    "backend/documind/review.py": "8c3af6f73f44d24fa5d59904c616cf5309c5f7c9c4b3f8ca7bfc1d123c48017f",
+    "backend/documind/schema.py": "0fe08f9be312f830c0877af4366676c8a99577ce966ff15012470f92728a91a0",
+    "backend/documind/selfrag.py": "b519549affb9be17eea944e91e8db2e321a164e3a62633fe90ece88c62e8fc02",
+    "backend/documind/storage.py": "90e6d3ac6b51d1f3a6bbcd5a6ac20ded6b384be0ec6de2f35d7a82262972ec8c",
+    "backend/documind/worker.py": "49970a1bc4abe387f4608d020736c5ce0931d0ddb575c81ce3b854749880e336",
+    "backend/tests/test_ingestion.py": "bd579c613a91e1630d7fcab0f82a58b30f641d9880ae13310302d6173091fa1b",
+    "backend/tests/test_kaggle_serving_probe.py": "3bd7c201d6f39748d950607e706556a96c012877005081d5a8e5da2685dbc9a2",
+    "backend/tests/test_phase2.py": "a6f6edf492fe6bb27a64af7abc7b1944f4dcabd16adc427fb4d2f4476754f3ba",
+    "backend/tests/test_phase3_browser.py": "1bb5bdcd3f28743888a23e5ecc1cd466134e977a8de84b7557d10f5032775efd",
+    "backend/tests/test_reflection.py": "b9fe934873bc76c346f622f51f019b1de153e985ab5eb09b37edf2046af3a186",
+    "backend/tests/test_reflection_runtime.py": "466ce5fd2b79fd56edfaa55dad09cd60a6a22317eb27ebf7a07bdbf57a77e441",
+    "compose.yaml": "16cdcc9a6fd4b4e36b34b8e3801e148f6ec58630e50d166980d02e3b545a3dee",
+    "frontend/components/comparisons.tsx": "1cd174c5a0d089a05aea0f24a625c5bd0c090314609cb27b9573948665c2e4a2",
+    "frontend/components/workspace.tsx": "95513adf76c9156a143e32e8dad9bd0dd9eeafa07c841b4b9d509fd0a2d576bc",
+    "frontend/lib/api.ts": "c7423bcdd47b82360d2722a4278439f30cfc801abeccfde2eaa9e4cae74720c3",
+    "frontend/package-lock.json": "5e2eba687ac9b932419233f95a426b76e580fbf28d18232d5c21b7eee8aa65ca",
+    "frontend/tests/workspace.spec.ts": "08d7554e3ae4a982a3392f8070dc6e83d58db982b192c8c75c471990fcbcd93d",
+    "migrations/versions/0010_artifacts_dispatch.py": "829e9b463c3b3a362dd939671e28d5ab4e6fcfe90cda1c608ad979e13020f94e",
+    "scripts/kaggle_serving_probe.py": "a6e6c3a400c3417a34bc64663e91d4a3ca0ec798e0d4d3d8a21bfc6709af6670",
+    "scripts/smoke.py": "04ac0a44a850bb5d10227ed843fea59721e2603871d389cc87e6efb8bfcdd8bf",
+    "uv.lock": "30efb891228902a82fcc793fae444078c33e93d949b3143b4a8acaaff35d9f2a"
+  },
+  "private_evidence_directory": ".data/audit-fixes-12-2026-11-15",
+  "private_evidence_sha256": {
+    "focused-recheck.xml": "8a4ef9575bfcd8e74b5a7fb313c7e2e4e3c120b878ac3c385fc0630caa4c425a",
+    "final-suite.xml": "ff110f3ae03465e97aa291306e2f5e64054f56f22d580edd7abd5709e61ed91f",
+    "final-suite.log": "9c13dcc4d7162fa5e1d4f6e30de1ae09dfd23cac40cf5c2901ec323d18a54803",
+    "native-recheck/native-compose.log": "a1c8e0e7e8c7506be157008b5f4dd693990af02b0427f6f4204064878c63c40a",
+    "native-recheck/native-result.json": "e9a8af2d4da2f3a82020f5638b10f6a2bdb435865c648cd111507c38c933518c",
+    "v4-review-recheck.json": "17bf58c0f8d34f5826d149f9ea6a2137f2ed1fe1584597c116914c84b5a7bb77"
+  }
+}

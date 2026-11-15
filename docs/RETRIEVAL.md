@@ -4,7 +4,7 @@ The hybrid ranking structure comes from source PDF pp. 2, 4. EmbeddingGemma 2 re
 
 ## 1. Versioned defaults: `hybrid-v3`
 
-This file owns retrieval budgets and tokenization. The selected production profile is **hybrid-v3**, using `google/embeddinggemma-2` with **240 reranker-tokenized content tokens and 64 overlap**. ADR-020 supersedes the hybrid-v2 MiniLM default without increasing passage size. Model/tokenizer revisions and compatible library versions must be pinned before indexing; model names alone are not reproducible revisions. No runtime or quality result is claimed.
+This file owns retrieval budgets and tokenization. The selected production profile is **hybrid-v3**, using `google/embeddinggemma-2` with **240 reranker-tokenized content tokens and 64 overlap**. ADR-020 supersedes the hybrid-v2 MiniLM default without increasing passage size. The implementation pins both checkpoint revisions and records compatible loader and library versions in each publication. Local runtime evidence is in PROGRESS.md.
 
 | Parameter | Starting value | Source |
 |---|---:|---|
@@ -29,7 +29,7 @@ Use config constants, record revisions and make benchmark alternatives explicit;
 ### Tokenization and overflow
 
 - Use the pinned reranker's tokenizer with offsets and `add_special_tokens=False` to construct chunks. Preserve a mapping from normalized offsets to immutable raw source ranges. Count tokens again on the exact final chunk text, including repeated table headers if any.
-- Prefer element/row boundaries within the 240-token maximum. Oversized elements are split with source offsets; never discard their tail. Overlap is at most 64 tokens and must be smaller than the preceding chunk so splitting always advances.
+- Prefer element/row boundaries within the 240-token maximum. Oversized elements are split with source offsets. Count overlap on the exact shared text because a WordPiece suffix can tokenize differently at the start of a chunk. Use at most 64 tokens and always advance.
 - Independently tokenize the exact formatted embedding input with the pinned Gemma tokenizer, truncation disabled, and assert it fits 8192 including special tokens. The larger dense limit does not increase the chunk budget. Fail indexing on incompatible tokenizers/configuration instead of truncating or silently changing limits.
 - Validate query length using both tokenizers. Rerank the actual `(query, chunk)` pair without truncation and check the pinned [reranker tokenizer's 512-token limit](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2/blob/main/tokenizer_config.json). An unexpected overflow is `RETRIEVAL_INPUT_TOO_LONG`, not a scored truncated passage.
 - Historical `hybrid-v2` used `sentence-transformers/all-MiniLM-L6-v2`, 384 dimensions, its own 240/64 tokenizer budget and a 256-token encoded cap. It is superseded, not an automatic fallback.
@@ -37,27 +37,17 @@ Use config constants, record revisions and make benchmark alternatives explicit;
 
 ### Embedding input and index identity
 
-- Load only the text encoder; with SentenceTransformers, disable vision/audio via `config_kwargs={"vision_config": None, "audio_config": None}`. Pin and test the actual loader before use.
+- The Transformers loader disables both modality towers and uses the checkpoint’s masked mean over text tokens, including its prompt. Normalize the output in float32. The SentenceTransformers path initialized its video processor with both towers disabled, so the implementation loads the text model and tokenizer directly.
 - Fix query formatting to `task: search result | query: {query}` (SearchQuery) and corpus formatting to `title: none | text: {chunk}` (Document). Apply each prefix exactly once. This profile deliberately omits optional titles. Format metadata is not a source excerpt and must never become a citation. BM25 and reranking receive the unprefixed query/chunk text.
 - Require finite, nonzero, 768-dimensional vectors; L2-normalize queries and documents and use cosine search. Other dimensions/modalities or prompt changes require another recorded profile.
 - Persist model/tokenizer revisions, loader/library versions, modality configuration, prompt strings/hash, normalization, dimension and chunker revision in the publication manifest. Query encoding must match the pinned publication; reject a mismatch even when dimensions agree.
-- Build `documind_chunks_v3` and re-embed every chunk for any existing corpus; publish only with a matching BM25 snapshot. Never mix MiniLM and Gemma vectors or reuse an old embedding cache. The native backend is implemented, but no runtime search index is built yet.
+- Build `documind_chunks_v3` and re-embed every chunk for any existing corpus; publish only with a matching BM25 snapshot. Never mix MiniLM and Gemma vectors or reuse an old embedding cache. The publication worker builds both artifacts and records their identity before switching the workspace pointer.
 
-Model capabilities and formatting reference: [Google EmbeddingGemma 2 model card](https://huggingface.co/google/embeddinggemma-2). Hardware, loader compatibility and retrieval accuracy remain untested.
+Model capabilities and formatting reference: [Google EmbeddingGemma 2 model card](https://huggingface.co/google/embeddinggemma-2). The development Mac ran the pinned CPU models and the labeled synthetic evaluation. See [the evaluation artifact](validation/phase2-development-2026-11-08.json).
 
 ## 2. Retrieve API
 
-```python
-async def retrieve(
-    query: str,
-    *,
-    workspace_id: UUID,
-    document_ids: list[UUID] | None = None,
-    publication_id: UUID,
-    k: int = 5,
-    retrieval_version: str = "hybrid-v3",
-) -> list[Passage]: ...
-```
+The local worker calls `retrieve(repo, query, workspace_id=..., publication_id=..., document_ids=...)`. It returns up to five ranked passages with their source anchors and ranking metadata. The pinned publication determines the retrieval profile.
 
 Always restrict to authorized workspace and document IDs. Reject empty queries, unavailable indexes and unauthorized documents explicitly. `None` means all searchable authorized documents resolved once at query creation; `[]` is invalid, never an instruction to search everything. The caller pins a publication and effective document set according to [DATA_MODEL.md](DATA_MODEL.md). Default v3 requires both branches and the reranker; outages return an explicit dependency error, not an automatic degraded experiment.
 
@@ -83,7 +73,7 @@ Always restrict to authorized workspace and document IDs. Reject empty queries, 
 - Preserve exact identifiers in metadata and text. Consider a separate field lookup path for `invoice_no`, `po_number`, dates and currencies.
 - Image-only figure text may be unavailable; represent unsupported modalities honestly and add OCR/vision components only after evaluation.
 
-## 5. Structured lookup branch (DocuMind addition)
+## 5. Structured lookup branch (planned for typed records)
 
 `structured_retrieve(workspace_id, document_ids, entity_ids, fields, filters)` looks up **typed extracted records** in PostgreSQL. It serves exact PO number matching, invoice totals, dates and table line items. The query router can merge structured evidence anchors with text chunks into a single cited context. Structured SQL values are not a substitute for original document evidence.
 
@@ -109,3 +99,9 @@ Record linkage policy:
 ## 7. Evaluation and testing
 
 Track Recall@5, Precision@5, MRR, NDCG@5, passage-level source hit accuracy, per-stage latency and retrieval coverage by query type. Run ablations dense-only, sparse-only, hybrid without rerank, full reranked. The original PDF asks 50-question manual top-5 checks; add a machine-labeled test corpus and retain manual review notes. For source-specific queries, query-to-doc grounding matters more than generic semantic similarity.
+
+## Implemented local publication
+
+`backend/documind/search_models.py` pins the model and tokenizer revisions. The Qdrant adapter uses exact cosine search with indexed workspace, publication and document filters. The worker compares the dense IDs and payload hashes with PostgreSQL and a checksummed lexical artifact. The lexical artifact stores ordered chunk IDs and token lists. BM25 IDF is fitted to that complete publication, then document eligibility is applied before ranking. Failed artifacts are collected after the grace period.
+
+Paragraph chunks preserve original element ranges. Reviewed table rows carry the table ID, cell coordinates and header context, with the header counted in the final token budget. Citations use raw source offsets, separate from header context and embedding prefixes. The evidence verifier currently supports explicit paragraph fields. Document IDs may be omitted to resolve the publication's active scope once, or supplied as a nonempty subset.

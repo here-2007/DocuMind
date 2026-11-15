@@ -1,6 +1,6 @@
 # API contract - v1 target
 
-This is the full v1 design contract. Phase 0/1A implements the local native subset listed in [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md); connection, query, investigation and report routes remain planned. Base path `/api/v1`. Implement in FastAPI with Pydantic v2 and generated OpenAPI. `application/json` unless indicated. Authentication for public releases is mandatory; a local development workspace is not authorization in production.
+This is the local-only v1 contract. It covers ingestion, publications, generation endpoints, trained reflection, citations, deterministic investigations and CSV reports. The [runbook](LOCAL_DEVELOPMENT.md) lists actual setup commands. The base path is `/api/v1`. FastAPI generates OpenAPI from Pydantic v2 schemas. Responses use `application/json` unless indicated.
 
 ## Shared rules
 
@@ -14,6 +14,8 @@ This is the full v1 design contract. Phase 0/1A implements the local native subs
 
 ## 1. Health and workspace
 
+`/ready` includes `database_schema_current`. An incompatible or uninitialized Alembic revision returns HTTP 503 with `DATABASE_MIGRATION_REQUIRED` and the upgrade command. Repository-backed routes enforce the same check before accessing application tables. Database connectivity failures are reported as `DATABASE_UNAVAILABLE` in readiness. No request performs an automatic migration; `/health` remains liveness.
+
 | Verb | Route | Notes |
 |---|---|---|
 | `GET` | `/health` | Process liveness, no secrets |
@@ -21,28 +23,24 @@ This is the full v1 design contract. Phase 0/1A implements the local native subs
 | `GET` | `/workspaces` | Authorized workspace list |
 | `POST` | `/workspaces` | Create workspace (when multi-workspace UI supported) |
 
-Readiness is capability-aware: native ingestion requires DB, object store and dispatch availability; search additionally requires matching published indexes and ranking models; generation requires an authorized ready connection with the requested capability; Self-RAG additionally requires the admitted trained release. Global health exposes only aggregate status; connection details require owner/workspace authorization. Return capability details without secrets. Do not make page previews depend on Qdrant/GPU availability. Lifecycle states/enums come from [DATA_MODEL.md](DATA_MODEL.md), not HTTP status codes.
+Workspace capabilities require the configured workspace row. Native ingestion also needs the object store and dispatch. Search requires matching published indexes and ranking models. Generation requires an authorized ready connection with the requested capability. Self-RAG needs the admitted trained release and dispatch. OCR reports configured artifact availability independently. Page previews depend on the workspace and object store. Health and readiness expose no secrets. Connection details require owner/workspace authorization. Lifecycle states and enums come from [DATA_MODEL.md](DATA_MODEL.md).
 
 ### Inference connections (Phase 2 onward)
 
-These routes are future contracts, not Phase 0/1A requirements. Every route requires the creating principal and workspace membership; workspace collaborators cannot use or administer another user's connection in v1. Secret request fields are write-only, excluded from logs, traces, errors, caches and GET responses. Store only secret-manager references in application tables.
+The local API implements versioned generation endpoint setup, validation and revocation. Local servers, private Kaggle bridges and remote providers share this shape. Kaggle model lifecycle uses the explicit local CLI. The application has one local principal and authorized workspace. Secret fields are write-only and encrypted locally.
 
-| Verb | Route under `/workspaces/{workspace_id}` | Request / response |
+| Verb | Route under /workspaces/{workspace_id} | Request and response |
 |---|---|---|
-| `POST` | `/inference-connections` | Required Idempotency-Key; kind, display name and either custom endpoint/protocol/model/credential or managed Kaggle credential/account binding. Returns 201 with sanitized metadata, version and configured state; does not start compute |
-| `GET` | `/inference-connections` | Owner's paginated connection metadata, tested modes, readiness and sanitized error reason |
-| `GET` | `/inference-connections/{id}` | Same scoped metadata plus provisioning/cleanup job IDs; never credentials |
-| `PATCH` | `/inference-connections/{id}` | Required Idempotency-Key and expected config version; changes create an immutable new version, invalidate readiness and return 200. Version race returns 409 |
-| `POST` | `/inference-connections/{id}/validate` | Idempotent synthetic probe job; 202 with job ID. No user documents sent during validation |
-| `POST` | `/inference-connections/{id}/start` | Managed Kaggle only, explicit idempotent provisioning job; 202. Disabled feature/platform gate returns 409 |
-| `POST` | `/inference-connections/{id}/stop` | Managed Kaggle only, idempotent stop job; 202. Blocks new dispatch immediately; cleanup may remain pending |
-| `DELETE` | `/inference-connections/{id}` | Idempotent revoke plus cleanup job; 202. Local use blocked immediately, secrets removed per SECURITY; remote cleanup not presumed complete |
+| POST | /inference-connections | Idempotency-Key plus display_name, endpoint_url, model_id and optional api_key. Returns 201 configured metadata |
+| GET | /inference-connections | Paginated sanitized metadata and tested generation capability |
+| GET | /inference-connections/{id} | Sanitized metadata for the authorized connection |
+| PATCH | /inference-connections/{id} | Idempotency-Key and expected_config_version. Creates a new version and invalidates readiness |
+| POST | /inference-connections/{id}/validate | Synthetic probe job. Returns 202 and job_id |
+| DELETE | /inference-connections/{id} | Revokes local dispatch and erases secrets. Returns 204 |
 
-Only supported protocol adapters are accepted; validate all URLs under SECURITY before probing. Baseline remote setup requires an endpoint credential; the operator-controlled local loopback exception is in INFERENCE.md. A managed start requires platform enablement plus valid account permission; a Kaggle key alone does not establish runtime readiness. Validate refreshes capability evidence, never silently changes the approved mode/release. Connection states and immutable versions are owned by DATA_MODEL.
+A private Kaggle model is started or stopped with its local bridge command and retained state. It exposes inference through authenticated loopback. Generation credential revocation and Kaggle allocation cleanup are separate operations. Query submission never provisions a notebook.
 
-Lifecycle transitions reject attempts to validate/start a stopping or revoked connection; a validate request probes an existing endpoint and never starts a notebook.
-
-Management idempotency records use a keyed digest for secret-bearing bodies, not raw keys or unkeyed secret hashes. Same key/body replays the original resource/version/job; differing bodies conflict. Recheck ownership/revocation before acting. Start/stop mutations and their durable jobs commit together. Credential replacement or endpoint edits stop new steps on old versions; running queries fail if their pinned version is no longer active.
+Idempotency uses protected keyed digests for secret-bearing bodies. The same key and body replay the accepted resource/version/job. A different body conflicts. Credential replacement or endpoint edits block new steps on the old version. A running query fails when its pinned version is no longer active.
 
 ## 2. Documents
 
@@ -55,6 +53,7 @@ Management idempotency records use a keyed digest for secret-bearing bodies, not
 | `GET` | `/workspaces/{workspace_id}/documents/{document_id}/pages/{page_number}/image` | Authenticated API-proxied rendered page image |
 | `GET` | `/workspaces/{workspace_id}/documents/{document_id}/elements` | Filter by `page_number`, `element_type` |
 | `GET` | `/workspaces/{workspace_id}/jobs/{job_id}` | Job kind/stage, status, attempts and error code |
+| `GET` | `/workspaces/{workspace_id}/cleanup-jobs` | Paginated IDs, statuses and error codes for queued, running or failed deletions |
 | `POST` | `/workspaces/{workspace_id}/jobs/{job_id}/retry` | Idempotent explicit retry for retryable non-query jobs; same logical resource/version, new lease attempts. Terminal query runs require a new query/key |
 | `POST` | `/workspaces/{workspace_id}/documents/{document_id}/reprocess` | Required Idempotency-Key; changed parser/config creates immutable extraction work; matching identity reuses its job |
 | `POST` | `/workspaces/{workspace_id}/documents/{document_id}/review` | Required Idempotency-Key; whole-document confirmation and optional existing text/header corrections create a new immutable reviewed extraction job (202) |
@@ -68,6 +67,10 @@ Illustrative upload response:
 ```
 
 Page/image/element routes accept `ingestion_version`; omitting it uses the preview version. Citation links always specify their immutable version. Needs-review pages may be previewed with warnings. Delete atomically revokes visibility and creates cleanup work before returning 202; repeat deletes return the existing cleanup job. Lifecycle and recovery are specified in DATA_MODEL.md and INGESTION.md.
+
+New uploads above `MAX_UPLOAD_BYTES` return `413 FILE_TOO_LARGE`. A full workspace returns `409 WORKSPACE_DOCUMENT_LIMIT` before writing an object or queuing work. `MAX_WORKSPACE_DOCUMENTS` defaults to 200 and counts queued, failed, ready and deleting documents until cleanup finishes. The same accepted upload replays at capacity or after the operator lowers the upload limit. The replay has a bounded body and must match the original receipt fingerprint.
+
+Original downloads check the accepted SHA-256. Preview image reads verify saved render metadata and return `503 SOURCE_ARTIFACT_UNAVAILABLE` for missing files or `503 SOURCE_HASH_MISMATCH` for failed integrity checks. `preview_available` requires all preview files to exist and any recorded sizes to match. Reads recheck visibility before returning bytes. `/ready` reports `workspace_initialized`. An absent configured workspace blocks uploads and workspace discovery with `503 WORKSPACE_NOT_INITIALIZED` until initialization succeeds.
 
 Phase 1B review request (local authenticated principal only):
 
@@ -96,6 +99,11 @@ Illustrative page element:
 
 ## 3. Query creation and result
 
+Phase 2 adds `POST /workspaces/{workspace_id}/publications` with an idempotency key. It queues a replacement of the eligible workspace corpus and returns `publication_id` and `job_id`. Use the job and `GET /workspaces/{workspace_id}/publications/{publication_id}` to poll the build. The prior publication stays active until successful replacement.
+
+The local custom adapter takes `display_name`, `endpoint_url`, `model_id`, optional `kind=custom_endpoint` and `protocol=openai_chat_completions`, and write-only `api_key`. PATCH takes the full new configuration and `expected_config_version`. DELETE immediately revokes and erases the local credential, returning 204. Query POST uses the documented 202 receipt. An omitted `connection_id` selects evidence-only baseline rendering. A selected connection enables the single chat step for verified fields. Optional `expected_config_version` on query creation rejects a stale connection selection. The Next.js workspace supplies this value. The events route supports JSON polling and SSE, with citation drilldown and immediate cancellation.
+
+
 `POST /workspaces/{workspace_id}/queries` creates a durable run and always returns `202` for an accepted request. Require `Idempotency-Key`, scoped by principal, workspace and operation. Same key/body returns the existing run (including completed runs); same key with different canonical body returns `409 IDEMPOTENCY_CONFLICT`. Validate mode, authorization, document eligibility and request limits before accepting. Store request key, run and queued job in one transaction.
 
 ```json
@@ -113,7 +121,7 @@ Illustrative page element:
 
 Request `mode` is `auto` or a result mode defined in DATA_MODEL.md. `auto` selects the baseline for document QA and deterministic comparison for supported calculations; it does not select research mode implicitly. Explicit unavailable `self_rag` returns `409 MODEL_NOT_READY`. The resolved mode and revisions are persisted, never relabeled after execution.
 
-For model-backed queries, require `connection_id` or resolve an explicitly configured local-only default connection. Validate ownership, ready state and mode capability; pin its current config version and capability/model/release snapshot transactionally. Do not accept model-backed work against a starting runtime. Reject ordinary endpoints requested as Self-RAG with MODEL_NOT_READY; unavailable connections return CONNECTION_UNAVAILABLE (known quota exhaustion: INFERENCE_QUOTA_EXCEEDED). Deterministic comparisons need no connection and reject a supplied connection to avoid implying model use. Connection setup is separate from request submission; request bodies never include API keys or raw endpoint overrides.
+For model-backed queries, pin the configured local fine-tuned runtime and any selected generation connection independently. `mode=self_rag` with a `connection_id` uses split reflection and requires the runtime's `candidate_scoring` capability. The connection must be ready for chat generation, owned by the local workspace and match `expected_config_version`. Without a connection, the integrated trained checkpoint generates its own candidates. Ordinary endpoint output alone cannot enable Self-RAG. Document questions must supply selected `document_ids`. The bounded unscoped general grammar accepts addition or repeating a supplied reference and returns `unverified` without citations. Other unscoped Self-RAG questions return `SOURCE_SCOPE_REQUIRED`. Request bodies contain no API keys or raw endpoint overrides.
 
 After an accepted run, upstream failures become the run's single persisted terminal error; result polling still returns 200 with failed status and sanitized error details. A switch to another endpoint/mode requires explicit user selection and a new request/key. Do not automatically retry uncertain generation, forward evidence to another provider, reset budgets or downgrade Self-RAG. Query cancellation also requests best-effort upstream cancellation; late results cannot change the terminal outcome.
 
@@ -133,17 +141,19 @@ For document questions, omitted `document_ids` resolves to the authorized search
   "trace_id":"<uuid>",
   "publication_id":"<uuid>",
   "retrieval_calls":1,
-  "inference":{"connection_id":"<connection_uuid>","config_version":1,"model_id":"meta-llama/Llama-3.2-3B-Instruct","model_revision":"<pinned_revision>","release_manifest_hash":null,"generation_used":true}
+  "inference":{"connection_id":"<connection_uuid>","config_version":1,"model_id":"Qwen/Qwen3-4B-Instruct-2507","model_revision":"<pinned_revision>","release_manifest_hash":null,"generation_used":true}
 }
 ```
 
 The result inference object is null when no generation was used. Provider-managed revision aliases must be labeled as such; no invented checkpoint hash. Traces and stored runs retain the admitted identity even on failure. The example above illustrates a configured baseline runtime, not a deployed model.
 
+Trained results include `strategy` as `integrated_checkpoint` or `split_reflection`, the fine-tuned model/manifest/instance, actual inference profile and optional generator connection/version. `admitted_connection` pins the selected generator's capability check. The local generation connection projection supplies its configured and validated model identity. Readiness reports `app_location=local`, `reflection_location` and `split_reflection` availability.
+
 Examples are illustrative; real offsets must be computed from exact stored text. Comparison results use `deterministic_comparison` and the rule in [EVIDENCE.md](EVIDENCE.md), with source-backed calculation records. `trace_id` equals `query_run_id` in v1. Internal claim/source checks and rejected candidates are retained with verifier revisions, but unauthorized content is never exposed.
 
 ## 4. Events, cancellation and source drilldown
 
-There is one execution entry point. Streaming is a read subscription: `GET /workspaces/{workspace_id}/queries/{query_run_id}/events` with `Accept: text/event-stream`. Without that Accept header it returns paginated persisted JSON events. There is no streaming creation endpoint or `stream` request flag.
+There is one execution entry point. The read subscription `GET /workspaces/{workspace_id}/queries/{query_run_id}/events` serves SSE when `Accept` explicitly allows `text/event-stream` with a positive quality at least as high as JSON. Other requests receive paginated persisted JSON events.
 
 ```text
 id: 1
@@ -152,13 +162,15 @@ data: {"query_run_id":"<uuid>","seq":1,"type":"retrieval_started","data":{"reque
 
 id: 2
 event: answer
-data: {"query_run_id":"<uuid>","seq":2,"answer":"Insufficient evidence.","citations":[],"grounding_status":"insufficient_evidence"}
+data: {"query_run_id":"<uuid>","seq":2,"grounding_status":"insufficient_evidence","result_url":"/api/v1/workspaces/<workspace_uuid>/queries/<uuid>"}
 
 ```
 
-Event IDs are decimal `seq`, monotonically increasing per run. Persist events before sending. Reconnect accepts `Last-Event-ID` or `after_seq` (both must agree if present), authorizes the run again, and replays strictly greater sequences. Invalid/future cursors return 400; purged event history returns `410 EVENTS_EXPIRED`, with a result link. Clients deduplicate by `(query_run_id, seq)`. Wire delivery is at least once; DATA_MODEL.md enforces exactly one durable terminal `answer` or `error` outcome. A terminal replay closes after the terminal event; reconnect after its sequence returns 204. A heartbeat comment is not a persisted event.
+Event IDs are decimal `seq`, monotonically increasing per run. Reconnect accepts `Last-Event-ID` or `after_seq` (both must agree if present), authorizes the run again, and replays strictly greater sequences. Invalid/future cursors return 400. Purged event history returns `410 EVENTS_EXPIRED` with `error.details.result_url` and a `Link` header for JSON and SSE requests. Clients deduplicate by `(query_run_id, seq)`. Wire delivery is at least once. DATA_MODEL.md enforces one durable terminal `answer` or `error` outcome. Reconnect after the terminal sequence returns 204. Clients reconnect after a disconnect before the terminal frame even if the query has already finished. Heartbeat comments are ephemeral.
 
-Trace types: `policy_decision`, `generation_started`, `reflection_token`, `retrieval_started`, `retrieval_completed`, `passage_found`, `passage_filtered`, `candidate_scored`, `citation_verified`, `warning`. Terminal types: `answer`, `error`. Cancellation uses terminal `error` with `QUERY_CANCELLED`. Only trained model output produces `reflection_token`; policy overrides are separate events. No hidden reasoning or unverified answer-token streaming in v1. Trace payloads contain bounded metadata/source IDs, not raw source text or system prompts.
+Terminal frames include the result URL. Fetch answer text and citations through that authorized result route. A source revoked after the stream starts produces `event: stream_error` with `SOURCE_UNAVAILABLE`, then closes the subscription. This subscription error is transient and does not append another terminal event to the ledger. Source revocation before subscription returns HTTP 410.
+
+Trace types: `policy_decision`, `generation_started`, `reflection_token`, `retrieval_started`, `retrieval_completed`, `passage_found`, `passage_filtered`, `evidence_windowed`, `identity_evidence`, `candidate_scored`, `citation_verified`, `warning`. `evidence_windowed` records the source ID and exact `start_char`/`end_char` selected for the generation context. `identity_evidence` records the field source ID, identity excerpt element ID and exact offsets. Terminal types: `answer`, `error`. Cancellation uses terminal `error` with `QUERY_CANCELLED`. Only trained model output produces `reflection_token`. Policy overrides are separate events. Trace payloads contain bounded metadata and source IDs. Raw source text and system prompts stay out of the trace.
 
 Disconnecting a subscription does not cancel or restart work. `POST /workspaces/{workspace_id}/queries/{query_run_id}/cancel` idempotently sets cancellation intent, returns 202 for pending cancellation, or 200 with the existing terminal result. Workers check between stages and generation steps; cancellation/finalization contend on the same run row, so only one terminal transition wins. Enforce execution deadlines and lease recovery even when no browser is connected.
 
@@ -166,18 +178,31 @@ Retain event history for the configured period after termination; ongoing runs a
 
 `GET /workspaces/{workspace_id}/citations/{citation_id}` resolves the pinned source version, page/element, raw quote and geometry after authorization. Browser navigation uses these stored values, never coordinates guessed by the model. A deleted source is unavailable, even if an old cached answer exists. Page rendering and downloads go through the authorized API in v1, avoiding stale public or signed links that bypass deletion checks.
 
+Result, event and citation reads revalidate stored support against complete pinned sources. An older supported QA answer affected by a competing or incomplete table field returns `409 QUERY_RECHECK_REQUIRED`; create a fresh query to obtain the current abstention. The historical result is not rewritten. Baseline and Self-RAG share this rule.
+
+Browser query recovery preserves the accepted-operation contract above: until a receipt is known, retain the original body and idempotency key, including source scope and destination/config version. A retry must recover the same query ID. Freeze editing until receipt or explicit choice to start a separate operation. Existing cached answers and source highlights clear on `QUERY_RECHECK_REQUIRED`, including after a backend verifier upgrade.
+
 ## 5. Investigations
 
-Work-creating POSTs require the same scoped Idempotency-Key contract as query/upload creation and persist their resource plus durable job atomically. The first rule is grand_total_match_v1 in EVIDENCE.md; more advanced rules must not be silently inferred.
+Work-creating POSTs use the same scoped `Idempotency-Key` contract as query/upload creation. Creation pins two or three distinct authorized preview versions and returns `201` with `investigation_id`. The run and report requests atomically queue durable jobs and return `202` with `job_id`. Each investigation has one comparison and one CSV artifact. After a terminal job failure, start a new investigation with a new creation key. The first rule is `grand_total_match_v1`. [Evidence contract](EVIDENCE.md).
 
 | Verb | Route | Notes |
 |---|---|---|
 | `POST` | `/workspaces/{workspace_id}/investigations` | Create investigation with source `document_ids` |
+| `GET` | `/workspaces/{workspace_id}/investigations` | Paginated active investigation summaries |
 | `POST` | `/workspaces/{workspace_id}/investigations/{id}/run` | Start deterministic extraction/link/validate task |
 | `GET` | `/workspaces/{workspace_id}/investigations/{id}` | Status, rule version, linked records and findings |
 | `GET` | `/workspaces/{workspace_id}/investigations/{id}/findings` | Computed discrepancies and evidence |
-| `POST` | `/workspaces/{workspace_id}/investigations/{id}/reports` | Create PDF or CSV report job |
-| `GET` | `/workspaces/{workspace_id}/reports/{report_id}` | Authorized report metadata and URL/stream |
+| `GET` | `/workspaces/{workspace_id}/investigations/{id}/evidence/{document_id}/{field}` | Pinned raw quote, geometry and authorized page URL |
+| `POST` | `/workspaces/{workspace_id}/investigations/{id}/reports` | Queue a CSV from a finished investigation. Body `{"format":"csv"}` |
+| `GET` | `/workspaces/{workspace_id}/reports/{report_id}` | Authorized report status, checksum and download URL when ready |
+| `GET` | `/workspaces/{workspace_id}/reports/{report_id}/content` | Verified `text/csv` attachment |
+
+Detail starts at `draft` and then follows the job status. A succeeded comparison can return a `needs_review` finding with `reason` and no verified difference. Money values are decimal strings. Source deletion returns `410 SOURCE_UNAVAILABLE` on old detail, evidence and report routes and removes the investigation from the list. The local `/queries` route continues to handle baseline QA. Comparisons use the investigation routes.
+
+An investigation with a comparison label in a table cell yields `COMPARISON_TABLE_FIELDS_UNSUPPORTED`. An affected legacy finding, its evidence links, report creation or replay, ready report metadata and CSV download return `409 INVESTIGATION_RECHECK_REQUIRED`. Start a fresh investigation to produce the needs-review finding. Ready report metadata and downloads both revalidate the stored CSV against the current finding and checksum.
+
+The workspace retries an unconfirmed comparison submission with the original source set and key. Once it receives the investigation ID, it keeps that ID across a failed detail read and resumes the same investigation. Refresh rechecks the open finding and clears its display, source highlight and download link when the verification gate rejects it.
 
 Finding example:
 
@@ -185,12 +210,14 @@ Finding example:
 {
   "type": "AMOUNT_MISMATCH",
   "status": "verified",
+  "mode": "deterministic_comparison",
+  "retrieval": "structured_sql",
   "currency": "INR",
   "purchase_order_amount": "1000.00",
   "invoice_amount": "1100.00",
   "difference": "100.00",
   "rule_id": "grand_total_match_v1",
-  "match_basis": {"field": "po_number", "value": "PO-100"},
+  "match_basis": {"method": "exact_po_and_vendor", "field": "po_number", "value": "PO-0100", "vendor_id": "VEN-005"},
   "evidence": [{"document_id":"<invoice_uuid>","page_number":1,"element_id":"<uuid>"}, {"document_id":"<po_uuid>","page_number":1,"element_id":"<uuid>"}]
 }
 ```
@@ -210,7 +237,7 @@ Finding example:
 | 500 | `INTERNAL_ERROR` | Unexpected failure with request ID; don't leak details |
 | 502 | `INFERENCE_FAILED` / `INFERENCE_PROTOCOL_ERROR` | Upstream failed or response/release identity invalid |
 | 503 | `DEPENDENCY_UNAVAILABLE` | Required dependency or matching index snapshot unavailable |
-| 504 | `INFERENCE_TIMEOUT` | Inference deadline exceeded; late output discarded |
+| 504 | `INFERENCE_TIMEOUT` / `QUERY_TIMEOUT` | Provider or query deadline exceeded. The dispatcher records `QUERY_TIMEOUT` even when a worker never claims the run |
 
 ## 7. Versioning and compatibility
 
@@ -218,4 +245,4 @@ Schema names, enum values and trace types are a proposed v1 starting contract. O
 
 ## Native slice implementation notes
 
-Local Bearer access and configured workspace scope are implemented; public auth/workspace creation are not. Upload/retry/reprocess require Idempotency-Key. Lists use opaque UUID cursors and source reads honor extraction versions. Native paragraph blocks expose raw/normalized text, page-text start/end ranges and rotated-page normalized boxes; native confidence is null. Unsupported/corrupt/encrypted/limit failures use the stable error shape. The native worker completes or marks needs_review without indexing. /ready checks schema/store/broker connectivity, not worker throughput. See ADR-022 and LOCAL_DEVELOPMENT for exact implemented scope.
+Local Bearer access and configured workspace scope are implemented. Upload/retry/reprocess require Idempotency-Key. Lists use opaque UUID cursors and source reads honor extraction versions. Page reads include `page_count` for that pinned extraction. Native paragraph blocks expose raw/normalized text, page-text start/end ranges and rotated-page normalized boxes. Unsupported/corrupt/encrypted/limit failures use the stable error shape. The native worker completes or marks needs_review independently of indexing. Search readiness uses the same active artifact checks as retrieval. See ADR-022, ADR-026 and LOCAL_DEVELOPMENT for the implemented scope.
