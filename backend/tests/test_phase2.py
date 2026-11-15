@@ -59,12 +59,15 @@ def test_qdrant_requires_key_and_does_not_allow_browser_origins(repo):
     url = repo.cfg.qdrant_url.rstrip("/") + "/collections/" + collection
     body = {"vectors": {"size": 2, "distance": "Cosine"}}
     headers = {"api-key": repo.cfg.qdrant_api_key.get_secret_value()}
-    with httpx.Client(timeout=5, trust_env=False) as client:
-        for method in ("GET", "PUT", "DELETE"):
-            result = client.request(method, url, json=body if method == "PUT" else None)
-            assert result.status_code in {401, 403}, result.status_code
+    # DenseIndex opens a fresh connection for each request.
+    with httpx.Client(
+        timeout=10, trust_env=False, limits=httpx.Limits(max_keepalive_connections=0)
+    ) as client:
         assert client.put(url, json=body, headers=headers).status_code == 200
         try:
+            for method in ("GET", "PUT", "DELETE"):
+                result = client.request(method, url, json=body if method == "PUT" else None)
+                assert result.status_code in {401, 403}, (method, result.status_code)
             result = client.get(url, headers=headers | {"Origin": "https://audit.invalid"})
             assert result.status_code == 200
             assert "access-control-allow-origin" not in result.headers
@@ -77,7 +80,6 @@ def test_qdrant_requires_key_and_does_not_allow_browser_origins(repo):
                 },
             )
             assert "access-control-allow-origin" not in preflight.headers
-            assert client.delete(url).status_code in {401, 403}
             assert client.get(url, headers=headers).status_code == 200
         finally:
             assert client.delete(url, headers=headers).status_code == 200

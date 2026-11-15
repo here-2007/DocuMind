@@ -283,9 +283,10 @@ def test_real_local_generator_serves_chat_completion():
 
 def test_checkpoint_validation_accepts_only_regular_pinned_safetensors(tmp_path, monkeypatch):
     import json
+    import sys
+    from types import SimpleNamespace
 
     from documind.reflection_model import SMOKE, checked_checkpoint
-    from transformers.utils import hub
 
     snapshot = tmp_path / "models--example" / "snapshots" / SMOKE[1]
     snapshot.mkdir(parents=True)
@@ -300,7 +301,7 @@ def test_checkpoint_validation_accepts_only_regular_pinned_safetensors(tmp_path,
         path = snapshot / name
         return str(path) if path.exists() else None
 
-    monkeypatch.setattr(hub, "cached_file", cached)
+    monkeypatch.setitem(sys.modules, "transformers.utils.hub", SimpleNamespace(cached_file=cached))
     assert checked_checkpoint(*SMOKE) == snapshot
     with pytest.raises(ValueError, match="immutable revision"):
         checked_checkpoint(SMOKE[0], "main")

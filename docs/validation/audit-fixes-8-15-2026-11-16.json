@@ -19,8 +19,11 @@
       "change": "Score first nonempty wire candidate before filtering and record attempt disposition separately from committed text."
     },
     "12": {
-      "status": "implemented",
-      "change": "Constrain PDF processing with a fixed environment, OS file/network confinement and resource limits."
+      "status": "verified_native_macos_and_linux_arm",
+      "change": "Constrain PDF processing with a fixed environment, OS file/network confinement and resource limits.",
+      "limitations": [
+        "Linux amd64 emulation on the tested Mac lacks the Landlock syscall. It fails closed with PARSER_SANDBOX_UNAVAILABLE."
+      ]
     },
     "13": {
       "status": "zero_current_gpu_reservation_historical_creation_unknown",
@@ -53,23 +56,25 @@
       ]
     },
     "15": {
-      "status": "clean_candidate_verified",
+      "status": "published_fresh_clone_verified",
       "candidate_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
-      "branch": "codex/audit-remediation"
+      "branch": "codex/audit-remediation",
+      "published_revision": "d0fafe95d7668a8704759bb510701a7db50f0124",
+      "actions_run": "https://github.com/here-2007/DocuMind/actions/runs/43758003991"
     }
   },
   "retrieval_only": {
-    "verified_source_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
+    "verified_source_revision": "d0fafe95d7668a8704759bb510701a7db50f0124",
     "dataset_sha256": "6bf099104bb6211a35f5f30497a0f0b4c5c53a8e3e50851f7c76ebe73e443c3b",
-    "cases": 200,
     "scope": "case_scope",
+    "cases": 200,
     "metrics": {
       "dense_only": {
         "n": 120,
         "hits_at_5": 120,
         "mrr_at_5": 0.8416666666666667,
         "precision_at_5": 0.2,
-        "median_seconds": 0.035174604010535404,
+        "median_seconds": 0.03595149953616783,
         "ndcg_at_5_one_gold_span": 0.8819418045833367
       },
       "bm25_only": {
@@ -77,31 +82,31 @@
         "hits_at_5": 120,
         "mrr_at_5": 0.8958333333333334,
         "precision_at_5": 0.2,
-        "median_seconds": 0.0004981874953955412,
+        "median_seconds": 0.0005249789974186569,
         "ndcg_at_5_one_gold_span": 0.923110365327387
       },
       "hybrid_rrf": {
         "n": 120,
         "hits_at_5": 120,
-        "mrr_at_5": 0.8694444444444444,
+        "mrr_at_5": 0.8680555555555556,
         "precision_at_5": 0.2,
-        "median_seconds": 0.03559118747944012,
-        "ndcg_at_5_one_gold_span": 0.902972796369052
+        "median_seconds": 0.03638604155275971,
+        "ndcg_at_5_one_gold_span": 0.9018817150892898
       },
       "hybrid_reranked": {
         "n": 120,
         "hits_at_5": 120,
         "mrr_at_5": 0.7916666666666666,
         "precision_at_5": 0.2,
-        "median_seconds": 0.04268793750088662,
+        "median_seconds": 0.04560556248179637,
         "ndcg_at_5_one_gold_span": 0.8454300968452463
       }
     },
     "measurements": [
       {
-        "run": "scoped-retrieval-final",
-        "raw_sha256": "593f8e1f2d2c091e2eca68bad473aeda2591c83ec070f8688c406394a1c6c32a",
-        "config_sha256": "1d3dd325bf18b8cc1e4bdc3d3bcf98e54f577b33920c25fc1e4c2fdd6e7ba2ae",
+        "run": "scoped-retrieval-release",
+        "raw_sha256": "9fd7bc8c445578f8e41854de606f2def2ee77bca2db6f8e3e71397e2b77bd774",
+        "config_sha256": "3ba60b7ebe58c7312e143c4ba858f50e577aef3e51725173f6086db69decaca2",
         "environment_sha256": null
       }
     ]
@@ -306,7 +311,32 @@
     },
     "native_compose_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
     "historical_mixed_implementation_rejection": true,
-    "dependency_scan": "pytest clear; Accelerate advisory remains flagged"
+    "dependency_scan": "pytest clear; Accelerate advisory remains flagged",
+    "release_parser_regressions": {
+      "tests": 36,
+      "skips": 0,
+      "failures": 0,
+      "seconds": 26.362
+    },
+    "fresh_github_clone_verified": true,
+    "linux_amd64_emulated_ocr": {
+      "build": "passed",
+      "run": "sandbox_unavailable",
+      "landlock_errno": "ENOSYS",
+      "synthetic_image_removed": true
+    },
+    "first_linux_actions_run": {
+      "revision": "d0fafe95d7668a8704759bb510701a7db50f0124",
+      "url": "https://github.com/here-2007/DocuMind/actions/runs/43758003991",
+      "tests_passed": 322,
+      "tests_failed": 2,
+      "failures": [
+        "Qdrant authentication regression transport timeout",
+        "Real CPU reflection pilot candidate timed out after five seconds"
+      ],
+      "production_parser_checks_passed": true,
+      "followup": "Use the same per-request transport as the index client and a fresh bounded deadline for the real CPU candidate. Three focused regressions passed locally."
+    }
   },
   "private_evidence_sha256": {
     "clean-full-suite.xml": "06b06b8ff5150ecb610b41f37d196479b2b9539b7fa448fe77741195d1d74855",
@@ -315,6 +345,12 @@
     "native-release/native-result.json": "6588104ab949192e9cfdd880ad99aa7626072f8d265389070c6f75403ff6d3f0",
     "scoped-retrieval-report/report.json": "af169cc327a313a7b94015655661859e2d7d3288e283ca72d367ea573b7b334e",
     "kaggle-reconciliation.json": "90e21d5adef475b9c436ff931140379bd962d74d3050496237b0835f014b0076",
-    "python-audit.json": "61d6d54fc69aedc98448d363c51549a2d31960a24a634ef9620b6dffca38fc60"
+    "python-audit.json": "61d6d54fc69aedc98448d363c51549a2d31960a24a634ef9620b6dffca38fc60",
+    "release-parser.xml": "f3d6f6e9e80d8ad2e219f72ec4c0c4cfe95727050447863b4216cf4761799d01",
+    "scoped-retrieval-release-report/report.json": "f363fac64eee5288856bb94807a35522cc4449447d17f147dd706027b54d2ab3",
+    "linux-ocr-check.log": "3f9b9917988f6f60cda4484266cb6d918765499e512dbe972d59d68ad5f99d07",
+    "linux-ocr-cleanup.log": "29a4c29483dc2a7de82129aa98c50d8b34e68db5e879761a0c36f7c743162976",
+    "ci-fixes-targeted.xml": "66710560192fd12c8ea5864cada9f4fff7c11823671a76fb6919d93f2abe0ce7",
+    "remote-ci-failed.log": "cd8368243639f6296ae17203622f35164d1c00efbd326f556ae4ccdba028b669"
   }
 }

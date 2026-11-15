@@ -736,20 +736,20 @@ def test_real_pilot_bundle_over_loopback(tmp_path):
             from contextlib import nullcontext
 
             request = build_step(cap, context=episode_context(sample, sample.episodes[0]))
-            decision, labels = runtime_client.invoke(cfg, cap, request, 4, nullcontext)
+            decision, labels = runtime_client.invoke(cfg, cap, request, 15, nullcontext)
             assert labels == {"decision": "[Retrieve]"}
             assert decision.output_tokens == 1
             assert decision == decode(request, Event())
-            assert runtime_client.invoke(cfg, cap, request, 4, nullcontext)[0] == decision
+            assert runtime_client.invoke(cfg, cap, request, 15, nullcontext)[0] == decision
             candidate = make_step(
                 cap,
                 request.run_id,
                 "CANDIDATE",
                 episode_context(sample, sample.episodes[1]),
                 20,
-                request.deadline,
+                datetime.now(UTC) + timedelta(seconds=30),
             )
-            scored, labels = runtime_client.invoke(cfg, cap, candidate, 5, nullcontext)
+            scored, labels = runtime_client.invoke(cfg, cap, candidate, 30, nullcontext)
             assert scored.input_tokens > decision.input_tokens
             assert set(scored.probabilities["relevance"]) == set(FAMILIES["relevance"])
             assert len(compare(cfg, cap, decode)["cases"]) == 3
