@@ -1,0 +1,320 @@
+{
+  "recorded_at": "2026-11-15T20:22:15.565205+00:00",
+  "scope": "November 16 audit findings 8\u201315",
+  "findings": {
+    "8": {
+      "status": "fixed",
+      "change": "Declare paired or retrieval-only mode and require every paired case to record all arm outcomes, with explicit failures counted."
+    },
+    "9": {
+      "status": "fixed",
+      "change": "Check retained source bytes against a trusted checkout and bind model capabilities to the run and its wire outputs. Refuse mixed code identities."
+    },
+    "10": {
+      "status": "fixed_and_measured",
+      "change": "Apply frozen case document scope before ranking each retrieval variant."
+    },
+    "11": {
+      "status": "fixed_and_rescored",
+      "change": "Score first nonempty wire candidate before filtering and record attempt disposition separately from committed text."
+    },
+    "12": {
+      "status": "implemented",
+      "change": "Constrain PDF processing with a fixed environment, OS file/network confinement and resource limits."
+    },
+    "13": {
+      "status": "zero_current_gpu_reservation_historical_creation_unknown",
+      "evidence": {
+        "checked_at": "2026-11-15T20:12:53.635309+00:00",
+        "owned_private_notebook": true,
+        "exact_source_digest_and_version": true,
+        "notebook_version": 1,
+        "notebook_version_status": "ERROR",
+        "notebook_last_run_time": "2026-11-12 20:12:52.253000",
+        "session_receipt_present": false,
+        "allocation_expired": true,
+        "allocation_outcome": "KAGGLE_CREATE_OUTCOME_UNKNOWN",
+        "reason": "Provider notebook version status has no interactive allocation ID or cancellation receipt.",
+        "gpu_reservation_observed_at": "2026-11-15T20:23:30.820985+00:00",
+        "account_gpu_reserved_seconds": 0.0
+      }
+    },
+    "14": {
+      "status": "pytest_fixed_accelerate_mitigated",
+      "pytest": "9.2.0",
+      "remaining_advisories": [
+        {
+          "package": "accelerate",
+          "version": "1.13.0",
+          "ids": [
+            "PYSEC-2026-3804"
+          ]
+        }
+      ]
+    },
+    "15": {
+      "status": "clean_candidate_verified",
+      "candidate_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
+      "branch": "codex/audit-remediation"
+    }
+  },
+  "retrieval_only": {
+    "verified_source_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
+    "dataset_sha256": "6bf099104bb6211a35f5f30497a0f0b4c5c53a8e3e50851f7c76ebe73e443c3b",
+    "cases": 200,
+    "scope": "case_scope",
+    "metrics": {
+      "dense_only": {
+        "n": 120,
+        "hits_at_5": 120,
+        "mrr_at_5": 0.8416666666666667,
+        "precision_at_5": 0.2,
+        "median_seconds": 0.035174604010535404,
+        "ndcg_at_5_one_gold_span": 0.8819418045833367
+      },
+      "bm25_only": {
+        "n": 120,
+        "hits_at_5": 120,
+        "mrr_at_5": 0.8958333333333334,
+        "precision_at_5": 0.2,
+        "median_seconds": 0.0004981874953955412,
+        "ndcg_at_5_one_gold_span": 0.923110365327387
+      },
+      "hybrid_rrf": {
+        "n": 120,
+        "hits_at_5": 120,
+        "mrr_at_5": 0.8694444444444444,
+        "precision_at_5": 0.2,
+        "median_seconds": 0.03559118747944012,
+        "ndcg_at_5_one_gold_span": 0.902972796369052
+      },
+      "hybrid_reranked": {
+        "n": 120,
+        "hits_at_5": 120,
+        "mrr_at_5": 0.7916666666666666,
+        "precision_at_5": 0.2,
+        "median_seconds": 0.04268793750088662,
+        "ndcg_at_5_one_gold_span": 0.8454300968452463
+      }
+    },
+    "measurements": [
+      {
+        "run": "scoped-retrieval-final",
+        "raw_sha256": "593f8e1f2d2c091e2eca68bad473aeda2591c83ec070f8688c406394a1c6c32a",
+        "config_sha256": "1d3dd325bf18b8cc1e4bdc3d3bcf98e54f577b33920c25fc1e4c2fdd6e7ba2ae",
+        "environment_sha256": null
+      }
+    ]
+  },
+  "historical_candidate_rescore": {
+    "rule": "First nonempty generated text after trimming outer whitespace, compared to exact gold quote or value.",
+    "broader_combination": "Rejected because the three shard source identities differ. Each result is reported independently.",
+    "results": [
+      {
+        "run": "broad-v1-measured",
+        "cases": 75,
+        "arms": {
+          "naive_rag": {
+            "n": 75,
+            "correct": 64,
+            "raw_candidate_correct": 49
+          },
+          "trained_self_rag": {
+            "n": 75,
+            "correct": 62,
+            "raw_candidate_correct": 40
+          },
+          "without_support_critic": {
+            "n": 75,
+            "correct": 62,
+            "raw_candidate_correct": 40
+          }
+        },
+        "measurements": [
+          {
+            "run": "broad-v1-measured",
+            "raw_sha256": "1949fb25374c7b214e86c1f53ca1768f01c7453ef38b32740b6498f4ff2654b2",
+            "config_sha256": "d8966afd5201fb82f3d08c2e3d5d2869d706f09260bc1b1ef9353270f71ecf95",
+            "environment_sha256": "6c5da7d2861efd23505ca06a0ff92364515f6b995f2d2215c8edb48c3b22ac1d"
+          }
+        ],
+        "measured_code": {
+          "backend/documind/evidence.py": "0a1571d89741b71ba73c36a1c8e334c7216de05a494a1f0a443470053298cd6a",
+          "backend/documind/publications.py": "0276f20fcb357b9240dbfc72985fa86fb465cd8f34d43f7af637d81e5a20c2c4",
+          "backend/documind/reflection_context.py": "c5194aec9d532ec7dfaf5311435721d2e588be21435683c7e38d4ff053fcefab",
+          "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+          "backend/documind/search_index.py": "304b9cfce98d995c7b86403a6696e1268df53f87cc7bb0afcd4479b5eaee58c3",
+          "backend/documind/selfrag.py": "8fd0668aa2912213ee918d2cf9be5bb46f722b83f1d1bba66a88aebcfd03e3b0",
+          "scripts/evaluate_phase8.py": "1150b4a894a681639297896951497b4d2c3e0eca1c8276c65d7737bce600afa0",
+          "scripts/phase8_dataset.py": "d1d17aa61370b61b65e6806e7f10b2e778e7c5d94d75500fc4ef94642cfdcac0",
+          "scripts/phase8_gpu.py": "218ef7e7f19d216796496cf696b9aa15cd3c7bbe94a27c27b9bbd8b1b29b7257"
+        },
+        "answers_sha256": "8ecb7742f898b561854bdbcf090eba334df24190ca999c14fedfdb4b5d607317"
+      },
+      {
+        "run": "broad-shard-2",
+        "cases": 59,
+        "arms": {
+          "naive_rag": {
+            "n": 59,
+            "correct": 51,
+            "raw_candidate_correct": 39
+          },
+          "trained_self_rag": {
+            "n": 59,
+            "correct": 48,
+            "raw_candidate_correct": 28
+          },
+          "without_support_critic": {
+            "n": 59,
+            "correct": 48,
+            "raw_candidate_correct": 28
+          }
+        },
+        "measurements": [
+          {
+            "run": "broad-shard-2",
+            "raw_sha256": "6ea102426a9fc386d31e659da9902957139526fa1f04b4ff17295c0f64c5004d",
+            "config_sha256": "8a357a5914920764af96eec1778b329e1a500eb7d026d990dfef308038f756bf",
+            "environment_sha256": "bbbc5b11971aa492ec76016e6a57ce06afe585bddc5de808694bbd5ce597f0a9"
+          }
+        ],
+        "measured_code": {
+          "backend/documind/evidence.py": "0a1571d89741b71ba73c36a1c8e334c7216de05a494a1f0a443470053298cd6a",
+          "backend/documind/publications.py": "0276f20fcb357b9240dbfc72985fa86fb465cd8f34d43f7af637d81e5a20c2c4",
+          "backend/documind/reflection_context.py": "c5194aec9d532ec7dfaf5311435721d2e588be21435683c7e38d4ff053fcefab",
+          "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+          "backend/documind/search_index.py": "304b9cfce98d995c7b86403a6696e1268df53f87cc7bb0afcd4479b5eaee58c3",
+          "backend/documind/selfrag.py": "8fd0668aa2912213ee918d2cf9be5bb46f722b83f1d1bba66a88aebcfd03e3b0",
+          "scripts/evaluate_phase8.py": "81e5c73b101f9bab641482902e03b886c2594c194a5a400df2b3639829c958b0",
+          "scripts/phase8_dataset.py": "7a7a72534b615bb9c16e29a85ebb42754b37f650d39a4c887536854f741af943",
+          "scripts/phase8_gpu.py": "6ac0d52fb5b02e51d500ff7cad0294f7db935b5dd59964c2fd8e751157ff7c53"
+        },
+        "answers_sha256": "76031d3b2bdcfd9a5ba4fcf6fb264055551a183bc5696c9e6b1caaceedc49f88"
+      },
+      {
+        "run": "broad-shard-3",
+        "cases": 66,
+        "arms": {
+          "naive_rag": {
+            "n": 66,
+            "correct": 57,
+            "raw_candidate_correct": 44
+          },
+          "trained_self_rag": {
+            "n": 66,
+            "correct": 52,
+            "raw_candidate_correct": 31
+          },
+          "without_support_critic": {
+            "n": 66,
+            "correct": 52,
+            "raw_candidate_correct": 31
+          }
+        },
+        "measurements": [
+          {
+            "run": "broad-shard-3",
+            "raw_sha256": "f5941a61d784f9892562c89ecab4110c169168d896b5f68eca6cfab9e2532a82",
+            "config_sha256": "cf55fb0ade2148bbe560192ebf672070e87dedecea1ae71319f7ea5d7633c127",
+            "environment_sha256": "c86352e5a7675a1b7b98410ee3bc8289f6696fa0132383edc6bbebbc4e424a71"
+          }
+        ],
+        "measured_code": {
+          "backend/documind/evidence.py": "0a1571d89741b71ba73c36a1c8e334c7216de05a494a1f0a443470053298cd6a",
+          "backend/documind/publications.py": "0276f20fcb357b9240dbfc72985fa86fb465cd8f34d43f7af637d81e5a20c2c4",
+          "backend/documind/reflection_context.py": "c5194aec9d532ec7dfaf5311435721d2e588be21435683c7e38d4ff053fcefab",
+          "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+          "backend/documind/search_index.py": "304b9cfce98d995c7b86403a6696e1268df53f87cc7bb0afcd4479b5eaee58c3",
+          "backend/documind/selfrag.py": "8fd0668aa2912213ee918d2cf9be5bb46f722b83f1d1bba66a88aebcfd03e3b0",
+          "scripts/evaluate_phase8.py": "81e5c73b101f9bab641482902e03b886c2594c194a5a400df2b3639829c958b0",
+          "scripts/phase8_dataset.py": "7a7a72534b615bb9c16e29a85ebb42754b37f650d39a4c887536854f741af943",
+          "scripts/phase8_gpu.py": "08e5e6e365fcb6d2b36b9292cba13fd5a45d29ccb787ba412f108086c1802218"
+        },
+        "answers_sha256": "c3f8b5889398f281c77189fd8f4fbf16b4aebafe23eb9c4adca3bbf09f9cdc83"
+      },
+      {
+        "run": "pretraining",
+        "cases": 60,
+        "arms": {
+          "naive_rag": {
+            "n": 60,
+            "correct": 45,
+            "raw_candidate_correct": 45
+          },
+          "trained_self_rag": {
+            "n": 60,
+            "correct": 60,
+            "raw_candidate_correct": 60
+          },
+          "without_support_critic": {
+            "n": 60,
+            "correct": 60,
+            "raw_candidate_correct": 60
+          }
+        },
+        "measurements": [
+          {
+            "run": "pretraining-v4",
+            "raw_sha256": "8df4231f020f82788d6228cc74b2452dd10a7de6a88e3e2eb5ecd05358f7e26b",
+            "config_sha256": "7e68b3aaa213d02be1feb97a8f51548c66cc2fb56cd05d0242991e80c9208c74",
+            "environment_sha256": "c86352e5a7675a1b7b98410ee3bc8289f6696fa0132383edc6bbebbc4e424a71"
+          },
+          {
+            "run": "pretraining-v4-rest",
+            "raw_sha256": "08033ef2245cd6ba9a0ad9f7f96ce93761617d2b3f54928380b145a1750975d7",
+            "config_sha256": "54c6f85d14ff291f1d602702ba7be6bda7f51900f0b39930d6f2edb22fd41f87",
+            "environment_sha256": "fdf81270c3356e1f22e8f5d99446df966d40f54e57a3008882e674bb636068b5"
+          }
+        ],
+        "measured_code": {
+          "backend/documind/evidence.py": "0a1571d89741b71ba73c36a1c8e334c7216de05a494a1f0a443470053298cd6a",
+          "backend/documind/publications.py": "0276f20fcb357b9240dbfc72985fa86fb465cd8f34d43f7af637d81e5a20c2c4",
+          "backend/documind/reflection_context.py": "c5194aec9d532ec7dfaf5311435721d2e588be21435683c7e38d4ff053fcefab",
+          "backend/documind/reflection_runtime.py": "db74dce4d9ffb7cba258958b6ba2674c5c9bd9f50988dfd19d8c6951f73ee166",
+          "backend/documind/search_index.py": "304b9cfce98d995c7b86403a6696e1268df53f87cc7bb0afcd4479b5eaee58c3",
+          "backend/documind/selfrag.py": "8fd0668aa2912213ee918d2cf9be5bb46f722b83f1d1bba66a88aebcfd03e3b0",
+          "scripts/evaluate_phase8.py": "81e5c73b101f9bab641482902e03b886c2594c194a5a400df2b3639829c958b0",
+          "scripts/phase8_dataset.py": "7a7a72534b615bb9c16e29a85ebb42754b37f650d39a4c887536854f741af943",
+          "scripts/phase8_gpu.py": "08e5e6e365fcb6d2b36b9292cba13fd5a45d29ccb787ba412f108086c1802218"
+        },
+        "answers_sha256": "846847aadfae2d8b76de0b3aac48baa46deb3602f9acf322c1e3c103b085eb80"
+      }
+    ]
+  },
+  "private_evidence_directory": ".data/audit-fixes-8-15",
+  "verification": {
+    "clean_checkout_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
+    "full_suite": {
+      "tests": 324,
+      "skipped": 0,
+      "failures": 0,
+      "existing_dependency_warnings": 5,
+      "seconds": 264.179
+    },
+    "locked_install": true,
+    "frontend_typecheck": true,
+    "frontend_build": true,
+    "ruff": true,
+    "whitespace": true,
+    "native_compose": {
+      "init": 0,
+      "compose": 0,
+      "health": 0,
+      "smoke": 0,
+      "cleanup": 0
+    },
+    "native_compose_revision": "12c5b8e0cb1178c7ffcf144e6428006a866c2f2d",
+    "historical_mixed_implementation_rejection": true,
+    "dependency_scan": "pytest clear; Accelerate advisory remains flagged"
+  },
+  "private_evidence_sha256": {
+    "clean-full-suite.xml": "06b06b8ff5150ecb610b41f37d196479b2b9539b7fa448fe77741195d1d74855",
+    "clean-full-suite.log": "64fd58a187bfa450bdfa6fa95c649061cd09c47e292c57c55f3e207ef1c6837a",
+    "clean-python-sync.log": "41b4f8e76c6b3775b72888b3b52d6550797b540c55e9bcb94c8bfd1cf29a1fbf",
+    "native-release/native-result.json": "6588104ab949192e9cfdd880ad99aa7626072f8d265389070c6f75403ff6d3f0",
+    "scoped-retrieval-report/report.json": "af169cc327a313a7b94015655661859e2d7d3288e283ca72d367ea573b7b334e",
+    "kaggle-reconciliation.json": "90e21d5adef475b9c436ff931140379bd962d74d3050496237b0835f014b0076",
+    "python-audit.json": "61d6d54fc69aedc98448d363c51549a2d31960a24a634ef9620b6dffca38fc60"
+  }
+}

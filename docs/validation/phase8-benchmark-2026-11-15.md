@@ -1,6 +1,6 @@
 # Phase 8 controlled evaluation
 
-**Historical report.** The November 16 remediation found three distinct evaluator source identities across the broader GPU shards. The combined figures below describe those saved outputs. Consult the remediation evidence for corrected per-shard raw candidate scores and a new retrieval run that honors frozen case scopes.
+**Historical report.** The November 16 remediation found three distinct evaluator source identities across the broader GPU shards. The combined figures below describe those saved outputs. The remediation record has corrected raw candidate scores per shard and a new retrieval run that honors frozen case scopes. [Remediation evidence](audit-fixes-8-15-2026-11-16.json).
 
 The frozen 200-case synthetic benchmark measured **172/200 correct baseline answers** and **162/200 correct trained Self-RAG answers**. Both arms used Qwen3-4B-Instruct-2507 at revision `cdbee75f17c01a7cc42f958dc650907174af0554`, NF4 and a Tesla T4. The adapter manifest is `0cfdee37208cb418e41727126882f73fcf1eb8812ee01c03dd19a24f161c2543`. [Artifact-bound results](phase8-benchmark-2026-11-15.json).
 

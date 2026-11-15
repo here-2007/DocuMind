@@ -4,7 +4,7 @@ DocuMind ingests local PDFs, publishes workspace search snapshots, serves checke
 
 The review found **15 actionable findings** spanning reproduced defects, security hardening and unresolved operations/release work. The normal suite passed **297 tests with zero skips**. The extra audit probes exposed failures outside that suite. Priority P1 means address first, P2 means material correctness or recovery work. Implementation code is unchanged by this audit.
 
-**Subsequent remediation:** findings **1–7** were fixed and verified after this audit. The final remediation suite passed **310 tests with zero skips**. Findings **8–15 remain open**. The original observations and evidence below are retained as the pre-fix snapshot. [Remediation record](audit-fixes-1-7-2026-11-16.json) · [Current progress](../../PROGRESS.md).
+**Subsequent remediation:** findings **1–7** were fixed and verified after this audit. The final remediation suite passed **310 tests with zero skips**. A later pass fixed findings 8–12, updated pytest and mitigated the Accelerate advisory in the model loader. The reconciliation record distinguishes Kaggle’s current account reservation from the unknown original creation outcome. [Subsequent remediation](audit-fixes-8-15-2026-11-16.json). The original observations and evidence below are retained as the pre-fix snapshot. [Remediation record](audit-fixes-1-7-2026-11-16.json) · [Current progress](../../PROGRESS.md).
 
 ## Must fix
 

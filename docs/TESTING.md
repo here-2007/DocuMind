@@ -215,3 +215,8 @@ The explicit operator command `scripts/evaluate_selected_workflow.py` is outside
 `backend/tests/test_phase8.py` checks the frozen 200-case manifest, original PDF gold spans, preserved pre-training cohort, retrieval variants, independent verification with support scoring disabled, paired statistics, checked archive upload retries and rejection of altered result artifacts. The broader operator run measures both base and trained models on a real private GPU. It is invoked explicitly through the [runbook](LOCAL_DEVELOPMENT.md#phase-8-frozen-benchmark).
 
 A benchmark shard can stop at expiry with a valid partial result. A complete report must include every frozen case exactly once, pass PDF/model/profile checks and recompute scores. The report exits with code 2 while cases are missing. The blinded review packet contains real outputs and empty verdict fields. Generating it supplies zero human judgments. [Measured outcomes and limitations](validation/phase8-benchmark-2026-11-15.md).
+
+
+## Phase 8 artifact admission and PDF processing
+
+`test_phase8.py` checks paired completeness, explicit failed arms, runtime evidence, source hash binding, retrieval scope and raw candidate scoring. `test_parser_storage.py` runs a real confined child and checks that it can access its private working directory while file and network access outside that boundary fail. Use the real OCR suite to verify the supported platform's model initialization inside the parser workflow. `test_local_models.py` checks pinned checkpoint admission and verified local model loading.
