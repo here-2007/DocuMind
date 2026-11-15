@@ -304,7 +304,7 @@ def _outside_table_words(page, tables, width, height):
 
 
 def _child(source: str, target: str, config: dict):
-    if sys.platform == "darwin" and config.get("ocr_enabled"):
+    if config.get("ocr_enabled"):
         try:
             # Paddle spawns a CPU-feature probe during import. Initialize the
             # trusted library before confinement and before opening the PDF.
